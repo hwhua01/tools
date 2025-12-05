@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -107,12 +108,12 @@ button:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(249,168,
 
   <div class="input-group">
     <label for="beginningValue">期初金額（Year 0）</label>
-    <input type="text" id="beginningValue" value="100000" placeholder="例如：100000">
+    <input type="text" id="beginningValue" value="100,000" placeholder="例如：100000">
   </div>
 
   <div class="input-group">
     <label for="annualContribution">每年再投入資金（Year 1 ~ Year T 期末）</label>
-    <input type="text" id="annualContribution" value="12000" placeholder="每年定投金額，若無則填 0">
+    <input type="text" id="annualContribution" value="12,000" placeholder="每年定投金額，若無則填 0">
     <small class="hint">假設每年年底投入</small>
   </div>
 
@@ -124,7 +125,7 @@ button:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(249,168,
 
   <div class="input-group">
     <label for="endingValue">期末總資產（Year T 結束時）</label>
-    <input type="text" id="endingValue" value="180000" placeholder="最終帳戶總額">
+    <input type="text" id="endingValue" value="180,000" placeholder="最終帳戶總額">
   </div>
 
   <button onclick="calculateMWRR()">開始計算 MWRR / IRR</button>
@@ -133,10 +134,10 @@ button:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(249,168,
 </div>
 
 <script>
-// === 1. 牛頓法 IRR ===
+// === 1. 牛頓法 IRR（改進版）===
 function calculateIRRNewton(cashFlows, guess = 0.1) {
   const MAX_ITER = 1000;
-  const PRECISION = 1e-8;
+  const PRECISION = 1e-10;
   let rate = guess;
 
   const npv = (r) => cashFlows.reduce((sum, cf, t) => sum + cf / Math.pow(1 + r, t), 0);
@@ -146,27 +147,48 @@ function calculateIRRNewton(cashFlows, guess = 0.1) {
     const y = npv(rate);
     if (Math.abs(y) < PRECISION) return rate;
     const d = derivative(rate);
-    if (Math.abs(d) < PRECISION) break; // 避免除以 0
-    const newRate = rate - y / d;
+    if (Math.abs(d) < 1e-15) break; // 避免除以接近 0 的數
+    let newRate = rate - y / d;
+    
+    // 防止 rate 變成極端值
+    if (newRate < -0.99) newRate = -0.99;
+    if (newRate > 10) newRate = 10;
+    
     if (Math.abs(newRate - rate) < PRECISION) return newRate;
     rate = newRate;
   }
   return null;
 }
 
-// === 2. 二分法 IRR（備用，極穩）===
+// === 2. 二分法 IRR（備用）===
 function calculateIRRBinary(cashFlows) {
-  let low = -0.999;   // -99.9%
-  let high = 10;      // 1000%
-  const PRECISION = 1e-8;
+  let low = -0.999;
+  let high = 10;
+  const PRECISION = 1e-10;
   const MAX_ITER = 1000;
+
+  const npv = (r) => cashFlows.reduce((sum, cf, t) => sum + cf / Math.pow(1 + r, t), 0);
+  
+  // 檢查邊界值的 NPV 符號
+  const npvLow = npv(low);
+  const npvHigh = npv(high);
+  
+  // 如果邊界 NPV 同號，無法用二分法
+  if (npvLow * npvHigh > 0) return null;
 
   for (let i = 0; i < MAX_ITER; i++) {
     const mid = (low + high) / 2;
-    const npv = cashFlows.reduce((sum, cf, t) => sum + cf / Math.pow(1 + mid, t), 0);
-    if (Math.abs(npv) < PRECISION) return mid;
-    if (npv > 0) low = mid;
-    else high = mid;
+    const npvMid = npv(mid);
+    
+    if (Math.abs(npvMid) < PRECISION) return mid;
+    
+    if (npvMid * npvLow < 0) {
+      high = mid;
+    } else {
+      low = mid;
+    }
+    
+    if (Math.abs(high - low) < PRECISION) return mid;
   }
   return (low + high) / 2;
 }
@@ -179,7 +201,6 @@ function calculateMWRR() {
   const endingValue = parseFloat(removeCommas(document.getElementById('endingValue').value)) || 0;
   const resultArea = document.getElementById('resultArea');
 
-  // 輸入驗證
   if (years < 1 || years > 50 || !Number.isInteger(years)) {
     showError("投資年數必須是 1~50 的整數");
     return;
@@ -193,19 +214,16 @@ function calculateMWRR() {
     return;
   }
 
-  // 正確建構現金流（這才是標準 MWRR 模型！）
   const cashFlows = [];
-  cashFlows.push(-beginningValue);                          // t=0 投入
+  cashFlows.push(-beginningValue);
   for (let i = 0; i < years; i++) {
-    cashFlows.push(-annualContribution);                    // 每年末投入
+    cashFlows.push(-annualContribution);
   }
-  cashFlows[cashFlows.length - 1] += endingValue;           // 最後一年：抵銷投入 + 取出全部資產
+  cashFlows[cashFlows.length - 1] += endingValue;
 
-  // 計算總投入
   const totalInvestment = beginningValue + annualContribution * years;
   const totalGainLoss = endingValue - totalInvestment;
 
-  // 計算 IRR（先牛頓法，失敗則二分法）
   let mwrr = calculateIRRNewton(cashFlows);
   if (mwrr === null) mwrr = calculateIRRBinary(cashFlows);
 
@@ -219,8 +237,8 @@ function displayResults(totalInvestment, totalGainLoss, mwrr, years, endingValue
 
   html += `<div class="result-item"><span class="result-label">投入本金總額</span><span class="result-value">${formatCurrency(totalInvestment)}</span></div>`;
   const gainClass = totalGainLoss >= 0 ? 'positive' : 'negative';
-  const gainLabel = totalGainLoss > 0 ? '淨獲利/虧損' : (totalGainLoss < 0 ? '淨獲利/虧損' : '淨獲利/虧損');
-  html += `<div class="result-item"><span class="result-label">${gainLabel}</span><span class="result-value ${gainClass}">${formatCurrency(totalGainLoss)}</span></div>`;
+  html += `<div class="result-item"><span class="result-label">淨獲利/虧損</span><span class="result-value ${gainClass}">${formatCurrency(totalGainLoss)}</span></div>`;
+  html += `<div class="result-item"><span class="result-label">期末總資產</span><span class="result-value">${formatCurrency(endingValue)}</span></div>`;
 
   html += '<div class="result-item highlight">';
   if (mwrr === null || !isFinite(mwrr)) {
@@ -233,11 +251,14 @@ function displayResults(totalInvestment, totalGainLoss, mwrr, years, endingValue
 
   if (mwrr !== null && isFinite(mwrr)) {
     const totalReturn = ((endingValue / totalInvestment) - 1) * 100;
+    const finalValue = totalInvestment * Math.pow(1 + mwrr, years);
+    
     html += `<div class="info-box">
       <strong>說明：</strong><br>
       • 總累積報酬率：${totalReturn.toFixed(2)}%<br>
       • 投資期間：${years} 年<br>
-      • MWRR 已正確考慮每筆資金的投入時點
+      • MWRR 已正確考慮每筆資金的投入時點<br>
+      • 若以 ${formatPercentage(mwrr)} 複利計算，${formatCurrency(totalInvestment)} 經過 ${years} 年會變成約 ${formatCurrency(finalValue)}
     </div>`;
   }
 
@@ -255,19 +276,47 @@ function showError(msg) {
   document.getElementById('resultArea').style.display = 'block';
 }
 
-// === 輸入框自動千分位 ===
+// === 修正：輸入時只允許數字，失焦時才格式化 ===
 document.addEventListener('DOMContentLoaded', () => {
   const moneyInputs = ['beginningValue', 'annualContribution', 'endingValue'];
+  
   moneyInputs.forEach(id => {
     const input = document.getElementById(id);
+    
+    // 輸入時只保留數字
     input.addEventListener('input', function(e) {
-      let val = e.target.value.replace(/[^\d]/g, '');
-      if (val) e.target.value = Number(val).toLocaleString('zh-TW');
+      const cursorPos = e.target.selectionStart;
+      const oldValue = e.target.value;
+      
+      // 只保留數字
+      const newValue = oldValue.replace(/[^\d]/g, '');
+      
+      if (newValue !== oldValue) {
+        e.target.value = newValue;
+        // 調整游標位置
+        const diff = oldValue.length - newValue.length;
+        e.target.setSelectionRange(cursorPos - diff, cursorPos - diff);
+      }
     });
-    // blur 時確保是整數
+    
+    // 獲得焦點時移除千分位格式
+    input.addEventListener('focus', function(e) {
+      const val = removeCommas(e.target.value);
+      if (val) {
+        e.target.value = val;
+      }
+    });
+    
+    // 失去焦點時加上千分位格式
     input.addEventListener('blur', function(e) {
-      let val = removeCommas(e.target.value);
-      if (val) e.target.value = Number(val).toLocaleString('zh-TW');
+      const val = removeCommas(e.target.value);
+      if (val && !isNaN(val) && val !== '0') {
+        e.target.value = Number(val).toLocaleString('zh-TW');
+      } else if (val === '0') {
+        e.target.value = '0';
+      } else {
+        e.target.value = '';
+      }
     });
   });
 
