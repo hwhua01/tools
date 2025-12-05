@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>期貨損益與追繳計算機</title>
+    <style>
+        :root {
+            --primary-color: #F9A826;
+            --primary-hover: #E6951F;
+            --accent-bg: #C9E3FF;
+            --text-color: #2c3e50;
+            --light-bg: #f4f7f6;
+            --negative-color: #e74c3c;
+            --positive-color: #27ae60;
+            --border-color: #bdc3c7;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #F4F7FB;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .calculator-container {
+            max-width: 550px;
+            width: 100%;
+            background-color: #ffffff;
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-top: 10px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .calculator-container h2 {
+            text-align: center;
+            color: var(--text-color);
+            margin-top: 0;
+            font-size: 1.9em;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+
+        .description {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.92em;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .description a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1em;
+            margin-top: 8px;
+            display: inline-block;
+            transition: color 0.3s;
+        }
+
+        .description a:hover {
+            color: #7f8c8d;
+            text-decoration: none;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .toggle-group input[type="radio"] {
+            display: none;
+        }
+
+        .toggle-group label {
+            flex: 1;
+            text-align: center;
+            padding: 14px 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 0.95em;
+            background-color: #fafafa;
+        }
+
+        .toggle-group label:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(249, 168, 38, 0.2);
+        }
+
+        .toggle-group input[type="radio"]:checked + label {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+            color: white;
+            border-color: var(--primary-hover);
+            box-shadow: 0 4px 12px rgba(249, 168, 38, 0.3);
+        }
+
+        .input-group {
+            margin-bottom: 22px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 0.95em;
+        }
+
+        .input-group input[type="number"],
+        .input-group input[type="text"] {
+            width: 100%;
+            padding: 13px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+            background-color: #fafafa;
+        }
+
+        .input-group input[type="number"]:focus,
+        .input-group input[type="text"]:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 8px rgba(249, 168, 38, 0.3);
+            background-color: #fff;
+        }
+
+        .input-group input[type="number"]:hover,
+        .input-group input[type="text"]:hover {
+            border-color: #95a5a6;
+        }
+
+        .input-group input.error {
+            border-color: var(--negative-color);
+            background-color: #ffe5e5;
+        }
+
+        .hint {
+            color: #7f8c8d;
+            font-size: 0.85em;
+            display: block;
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .preset-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background-color: #ecf0f1;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        .preset-btn:hover {
+            background-color: #d5dbdb;
+            transform: translateY(-1px);
+        }
+
+        .preset-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-hover);
+        }
+
+        button.calculate-btn {
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.15em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(249, 168, 38, 0.3);
+        }
+
+        button.calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(249, 168, 38, 0.4);
+        }
+
+        button.calculate-btn:active {
+            transform: translateY(0);
+        }
+
+        .result-area {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-bg) 0%, #a8d5ff 100%);
+            border: 2px solid #a3c9f2;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-area h3 {
+            margin-top: 0;
+            margin-bottom: 18px;
+            color: var(--text-color);
+            font-size: 1.3em;
+            text-align: center;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 14px 0;
+            font-size: 1.05em;
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 12px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .result-item:hover {
+            background-color: rgba(255, 255, 255, 0.95);
+            transform: translateX(5px);
+        }
+
+        .result-item.highlight {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 2px solid var(--primary-color);
+            font-weight: bold;
+            font-size: 1.15em;
+        }
+
+        .result-item.warning {
+            background-color: #ffe5e5;
+            border: 2px solid var(--negative-color);
+            font-weight: bold;
+        }
+
+        .result-label {
+            flex-basis: 60%;
+            font-weight: 500;
+        }
+
+        .result-value {
+            font-weight: 700;
+            text-align: right;
+            flex-basis: 40%;
+            font-size: 1.1em;
+            color: var(--primary-color);
+        }
+
+        .result-value.positive {
+            color: var(--positive-color);
+        }
+
+        .result-value.negative {
+            color: var(--negative-color);
+        }
+
+        .result-item.warning .result-value {
+            color: var(--negative-color);
+        }
+
+        .error-message {
+            color: var(--negative-color);
+            text-align: center;
+            padding: 15px;
+            background-color: #ffe5e5;
+            border-radius: 8px;
+            border-left: 4px solid var(--negative-color);
+            font-weight: 600;
+            margin-top: 20px;
+        }
+
+        .info-box {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 12px;
+            margin: 20px 0 0 0;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            color: #2980b9;
+        }
+
+        .roi-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+
+        .roi-indicator.positive {
+            background-color: rgba(39, 174, 96, 0.15);
+            color: var(--positive-color);
+        }
+
+        .roi-indicator.negative {
+            background-color: rgba(231, 76, 60, 0.15);
+            color: var(--negative-color);
+        }
+
+        @media (max-width: 600px) {
+            .calculator-container {
+                padding: 25px 18px;
+            }
+
+            .calculator-container h2 {
+                font-size: 1.6em;
+            }
+
+            .toggle-group {
+                flex-direction: column;
+            }
+
+            .preset-buttons {
+                flex-direction: column;
+            }
+
+            .result-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+
+            .result-value {
+                text-align: left;
+                padding-left: 10px;
+                font-size: 1.15em;
+            }
+
+            .result-item.warning {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator-container">
+    <h2>🚀 期貨損益計算機</h2>
+
+    <div class="description">
+        預設為<strong>臺指期 (TX)</strong>參數。計算損益、報酬率與追繳價格。<br>
+        <a href="https://leveragetw.com/" target="_blank">槓桿學院</a>
+    </div>
+
+    <div class="toggle-group">
+        <input type="radio" id="long" name="position" value="long" checked>
+        <label for="long">📈 做多（買進）</label>
+
+        <input type="radio" id="short" name="position" value="short">
+        <label for="short">📉 做空（放空）</label>
+    </div>
+
+    <div class="input-group">
+        <label for="entryPrice">💵 進場價格（點數）</label>
+        <input type="text" id="entryPrice" value="18,000" placeholder="進場價格" aria-label="進場價格">
+    </div>
+
+    <div class="input-group">
+        <label for="exitPrice">🎯 平倉價格（點數）</label>
+        <input type="text" id="exitPrice" value="18,200" placeholder="平倉價格" aria-label="平倉價格">
+    </div>
+
+    <div class="input-group">
+        <label for="quantity">📊 交易口數</label>
+        <input type="text" id="quantity" value="1" placeholder="交易口數" aria-label="交易口數">
+    </div>
+
+    <div class="input-group">
+        <label for="multiplier">💰 點數價值（元/點）</label>
+        <input type="text" id="multiplier" value="200" placeholder="點數價值" aria-label="點數價值">
+        <div class="preset-buttons">
+            <button class="preset-btn active" onclick="setMultiplierPreset(200, this)">TX (200)</button>
+            <button class="preset-btn" onclick="setMultiplierPreset(50, this)">MTX (50)</button>
+        </div>
+        <small class="hint">臺指期 (TX) 為 200 元；小型臺指期 (MTX) 為 50 元</small>
+    </div>
+
+    <div class="input-group">
+        <label for="initialMargin">🏦 原始保證金（元）</label>
+        <input type="text" id="initialMargin" value="338,000" placeholder="原始保證金" aria-label="原始保證金">
+        <small class="hint">每口合約需繳納的原始保證金</small>
+    </div>
+
+    <div class="input-group">
+        <label for="maintenanceMargin">⚠️ 維持保證金（元）</label>
+        <input type="text" id="maintenanceMargin" value="259,000" placeholder="維持保證金" aria-label="維持保證金">
+        <small class="hint">低於此值將收到追繳通知</small>
+    </div>
+
+    <div class="input-group">
+        <label for="transactionCost">💳 單邊交易成本（元/口）</label>
+        <input type="text" id="transactionCost" value="50" placeholder="交易成本" aria-label="交易成本">
+        <small class="hint">含手續費與交易稅，來回為兩倍</small>
+    </div>
+
+    <button class="calculate-btn" id="calculateBtn">🚀 開始計算</button>
+
+    <div id="resultArea" style="display: none;"></div>
+</div>
+
+<script>
+'use strict';
+
+// ============ 常數定義 ============
+
+const CONSTANTS = {
+    TX_MULTIPLIER: 200,
+    MTX_MULTIPLIER: 50,
+    DEFAULT_TRANSACTION_COST: 50
+};
+
+// ============ 工具函數 ============
+
+const NumberUtils = {
+    formatCurrency(amount) {
+        return new Intl.NumberFormat('zh-TW', {
+            style: 'currency',
+            currency: 'TWD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(Math.round(amount));
+    },
+
+    formatPoints(points, decimals = 2) {
+        return `${points.toFixed(decimals)} 點`;
+    },
+    
+    formatPointsInteger(points) {
+        return `${Math.round(points).toLocaleString('zh-TW')} 點`;
+    },
+
+    formatPercentage(rate) {
+        const sign = rate >= 0 ? '+' : '';
+        return `${sign}${rate.toFixed(2)}%`;
+    },
+
+    parseNumber(value, defaultValue = 0) {
+        const cleaned = typeof value === 'string' ? value.replace(/,/g, '') : value;
+        const parsed = parseFloat(cleaned);
+        return isNaN(parsed) ? defaultValue : parsed;
+    },
+
+    removeCommas(value) {
+        return value.replace(/,/g, '');
+    },
+
+    formatWithCommas(value) {
+        return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+};
+
+// ============ 輸入驗證 ============
+
+const Validator = {
+    validateFuturesInputs(inputs) {
+        const errors = [];
+        const { entryPrice, exitPrice, quantity, multiplier, initialMargin, maintenanceMargin, transactionCost } = inputs;
+
+        if (entryPrice <= 0) {
+            errors.push('進場價格必須大於 0');
+        }
+
+        if (exitPrice <= 0) {
+            errors.push('平倉價格必須大於 0');
+        }
+
+        if (quantity <= 0 || !Number.isInteger(quantity)) {
+            errors.push('交易口數必須是大於 0 的整數');
+        }
+
+        if (multiplier <= 0) {
+            errors.push('點數價值必須大於 0');
+        }
+
+        if (initialMargin <= 0) {
+            errors.push('原始保證金必須大於 0');
+        }
+
+        if (maintenanceMargin <= 0) {
+            errors.push('維持保證金必須大於 0');
+        }
+
+        if (maintenanceMargin >= initialMargin) {
+            errors.push('維持保證金應低於原始保證金');
+        }
+
+        if (transactionCost < 0) {
+            errors.push('交易成本不能為負數');
+        }
+
+        return errors;
+    }
+};
+
+// ============ 期貨計算器 ============
+
+class FuturesCalculator {
+    constructor() {
+        this.inputs = {
+            position: document.querySelectorAll('input[name="position"]'),
+            entryPrice: document.getElementById('entryPrice'),
+            exitPrice: document.getElementById('exitPrice'),
+            quantity: document.getElementById('quantity'),
+            multiplier: document.getElementById('multiplier'),
+            initialMargin: document.getElementById('initialMargin'),
+            maintenanceMargin: document.getElementById('maintenanceMargin'),
+            transactionCost: document.getElementById('transactionCost')
+        };
+        this.resultArea = document.getElementById('resultArea');
+    }
+
+    getInputValues() {
+        const position = document.querySelector('input[name="position"]:checked').value;
+        
+        return {
+            position,
+            entryPrice: NumberUtils.parseNumber(this.inputs.entryPrice.value),
+            exitPrice: NumberUtils.parseNumber(this.inputs.exitPrice.value),
+            quantity: parseInt(this.inputs.quantity.value) || 0,
+            multiplier: NumberUtils.parseNumber(this.inputs.multiplier.value),
+            initialMargin: NumberUtils.parseNumber(this.inputs.initialMargin.value),
+            maintenanceMargin: NumberUtils.parseNumber(this.inputs.maintenanceMargin.value),
+            transactionCost: NumberUtils.parseNumber(this.inputs.transactionCost.value)
+        };
+    }
+
+    calculate() {
+        UIController.clearErrors();
+
+        const inputs = this.getInputValues();
+        const errors = Validator.validateFuturesInputs(inputs);
+
+        if (errors.length > 0) {
+            UIController.showError(errors[0]);
+            return;
+        }
+
+        const results = this.performCalculations(inputs);
+        UIController.showResults(results, inputs.position);
+    }
+
+    performCalculations(inputs) {
+        const { position, entryPrice, exitPrice, quantity, multiplier, initialMargin, maintenanceMargin, transactionCost } = inputs;
+
+        // 計算點差
+        const pointDifference = position === 'long' 
+            ? exitPrice - entryPrice 
+            : entryPrice - exitPrice;
+
+        // 毛損益
+        const grossProfit = pointDifference * multiplier * quantity;
+
+        // 總交易成本（來回）
+        const totalTransactionCost = transactionCost * 2 * quantity;
+
+        // 淨損益
+        const netProfit = grossProfit - totalTransactionCost;
+
+        // 總投入保證金
+        const totalInitialMargin = initialMargin * quantity;
+
+        // 報酬率（ROI）
+        const roi = (netProfit / totalInitialMargin) * 100;
+
+        // 追繳價格計算
+        const marginDifference = initialMargin - maintenanceMargin;
+        const valuePerPoint = multiplier * quantity;
+        
+        let marginCallPrice;
+        if (valuePerPoint === 0) {
+            marginCallPrice = NaN;
+        } else {
+            const offset = marginDifference / valuePerPoint;
+            marginCallPrice = position === 'long'
+                ? entryPrice - offset
+                : entryPrice + offset;
+        }
+
+        return {
+            pointDifference,
+            grossProfit,
+            totalTransactionCost,
+            netProfit,
+            totalInitialMargin,
+            marginCallPrice,
+            roi,
+            entryPrice,
+            exitPrice
+        };
+    }
+}
+
+// ============ UI 控制器 ============
+
+const UIController = {
+    showError(message) {
+        const resultArea = document.getElementById('resultArea');
+        resultArea.innerHTML = `<div class="error-message">⚠️ ${message}</div>`;
+        resultArea.style.display = 'block';
+    },
+
+    showResults(data, position) {
+        const { pointDifference, grossProfit, totalTransactionCost, netProfit, totalInitialMargin, marginCallPrice, roi, entryPrice, exitPrice } = data;
+
+        const netProfitClass = netProfit > 0 ? 'positive' : (netProfit < 0 ? 'negative' : '');
+        const roiClass = roi > 0 ? 'positive' : (roi < 0 ? 'negative' : '');
+        const positionText = position === 'long' ? '做多' : '做空';
+
+        const html = `
+            <div class="result-area">
+                <h3>📊 損益與風險分析</h3>
+
+                <div class="result-item">
+                    <span class="result-label">📍 交易方向</span>
+                    <span class="result-value">${positionText}</span>
+                </div>
+
+                <div class="result-item">
+                    <span class="result-label">📈 交易點差</span>
+                    <span class="result-value">${NumberUtils.formatPointsInteger(pointDifference)}</span>
+                </div>
+
+                <div class="result-item">
+                    <span class="result-label">🏦 原始投入保證金</span>
+                    <span class="result-value">${NumberUtils.formatCurrency(totalInitialMargin)}</span>
+                </div>
+
+                <div class="result-item">
+                    <span class="result-label">💵 毛損益（未扣成本）</span>
+                    <span class="result-value ${netProfitClass}">${NumberUtils.formatCurrency(grossProfit)}</span>
+                </div>
+
+                <div class="result-item">
+                    <span class="result-label">💳 交易成本（來回）</span>
+                    <span class="result-value negative">${NumberUtils.formatCurrency(totalTransactionCost)}</span>
+                </div>
+
+                <div class="result-item highlight">
+                    <span class="result-label">✨ 淨損益</span>
+                    <span class="result-value ${netProfitClass}">
+                        ${NumberUtils.formatCurrency(netProfit)}
+                        <span class="roi-indicator ${roiClass}">${NumberUtils.formatPercentage(roi)}</span>
+                    </span>
+                </div>
+
+                <div class="result-item warning">
+                    <span class="result-label">⚠️ 預估追繳價格</span>
+                    <span class="result-value">
+                        ${isNaN(marginCallPrice) ? '無法計算' : NumberUtils.formatPointsInteger(marginCallPrice)}
+                    </span>
+                </div>
+
+                <div class="info-box">
+                    <strong>💡 說明：</strong><br>
+                    • 進場價格：${Math.round(entryPrice).toLocaleString('zh-TW')} 點<br>
+                    • 平倉價格：${Math.round(exitPrice).toLocaleString('zh-TW')} 點<br>
+                    • 報酬率：${NumberUtils.formatPercentage(roi)}<br>
+                    ${!isNaN(marginCallPrice) ? `• 當價格${position === 'long' ? '跌破' : '突破'} ${Math.round(marginCallPrice).toLocaleString('zh-TW')} 點時，將收到追繳通知` : ''}
+                </div>
+            </div>
+        `;
+
+        const resultArea = document.getElementById('resultArea');
+        resultArea.innerHTML = html;
+        resultArea.style.display = 'block';
+    },
+
+    clearErrors() {
+        document.querySelectorAll('input.error').forEach(input => {
+            input.classList.remove('error');
+        });
+    }
+};
+
+// ============ 預設值設定 ============
+
+function setMultiplierPreset(value, button) {
+    const multiplierInput = document.getElementById('multiplier');
+    multiplierInput.value = NumberUtils.formatWithCommas(value.toString());
+    
+    // 更新按鈕樣式
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    button.classList.add('active');
+
+    // 根據合約類型更新保證金預設值
+    if (value === 200) {
+        // TX - 臺指期貨
+        document.getElementById('initialMargin').value = '338,000';
+        document.getElementById('maintenanceMargin').value = '259,000';
+    } else if (value === 50) {
+        // MTX - 小型臺指期貨
+        document.getElementById('initialMargin').value = '84,500';
+        document.getElementById('maintenanceMargin').value = '64,750';
+    }
+}
+
+// ============ 輸入格式化 ============
+
+class InputFormatter {
+    constructor(inputId) {
+        this.input = document.getElementById(inputId);
+        if (this.input) {
+            this.init();
+        }
+    }
+    
+    init() {
+        // 只監聽 focus 和 blur 事件
+        this.input.addEventListener('focus', (e) => this.handleFocus(e));
+        this.input.addEventListener('blur', (e) => this.handleBlur(e));
+        this.input.addEventListener('input', (e) => this.handleInput(e));
+        
+        // 初始化時格式化現有值
+        if (this.input.value) {
+            const value = NumberUtils.removeCommas(this.input.value);
+            const num = parseFloat(value);
+            if (!isNaN(num)) {
+                this.input.value = NumberUtils.formatWithCommas(Math.round(num).toString());
+            }
+        }
+    }
+    
+    handleFocus(e) {
+        // 獲得焦點時移除千位符號，方便編輯
+        const value = NumberUtils.removeCommas(e.target.value);
+        if (value) {
+            e.target.value = value;
+        }
+    }
+    
+    handleInput(e) {
+        // 輸入時只過濾非法字符，不做格式化
+        let value = e.target.value;
+        
+        // 只允許數字和小數點
+        value = value.replace(/[^\d.]/g, '');
+        
+        // 確保只有一個小數點
+        const parts = value.split('.');
+        if (parts.length > 2) {
+            value = parts[0] + '.' + parts.slice(1).join('');
+        }
+        
+        e.target.value = value;
+    }
+    
+    handleBlur(e) {
+        // 失去焦點時才格式化
+        let value = e.target.value;
+        if (value) {
+            const num = parseFloat(value);
+            if (!isNaN(num)) {
+                e.target.value = NumberUtils.formatWithCommas(Math.round(num).toString());
+            }
+        }
+    }
+}
+
+// ============ 應用初始化 ============
+
+document.addEventListener('DOMContentLoaded', () => {
+    const calculator = new FuturesCalculator();
+
+    // 設置輸入格式化
+    ['entryPrice', 'exitPrice', 'quantity', 'multiplier', 'initialMargin', 'maintenanceMargin', 'transactionCost'].forEach(id => {
+        new InputFormatter(id);
+    });
+
+    // 計算按鈕
+    document.getElementById('calculateBtn').addEventListener('click', () => {
+        calculator.calculate();
+    });
+
+    // Enter 鍵觸發
+    document.querySelectorAll('input').forEach(input => {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                calculator.calculate();
+            }
+        });
+    });
+
+    // 多空切換時自動重新計算（如果結果區已顯示）
+    document.querySelectorAll('input[name="position"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            const resultArea = document.getElementById('resultArea');
+            if (resultArea.style.display !== 'none') {
+                calculator.calculate();
+            }
+        });
+    });
+});
+</script>
+
+</body>
+</html>
