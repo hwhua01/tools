@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>年化報酬率計算機 - MWRR/IRR</title>
+<style>
+:root {
+  --primary-color: #F9A826;
+  --primary-hover: #E6951F;
+  --accent-bg: #C9E3FF;
+  --text-color: #2c3e50;
+  --light-bg: #f4f7f6;
+  --negative-color: #e74c3c;
+  --positive-color: #27ae60;
+  --border-color: #bdc3c7;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+* { box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #F4F7FB;
+  margin: 0; padding: 20px;
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh;
+}
+.calculator-container {
+  max-width: 550px; width: 100%;
+  background-color: #ffffff;
+  padding: 35px; border-radius: 16px;
+  box-shadow: var(--shadow);
+  margin-top: 10px;
+  animation: fadeIn 0.5s ease-in;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+.calculator-container h1 { text-align: center; color: var(--text-color); margin-top: 0; font-size: 1.9em; border-bottom: 3px solid var(--primary-color); padding-bottom: 12px; margin-bottom: 15px; }
+.description { 
+  text-align: left; 
+  color: #7f8c8d; 
+  font-size: 0.9em; 
+  line-height: 1.7; 
+  margin-bottom: 25px; 
+  padding: 16px 20px; 
+  background-color: #f8f9fa; 
+  border-radius: 8px; 
+  border-left: 4px solid var(--primary-color); 
+}
+.description strong {
+  color: #6c757d;
+  font-weight: 600;
+  font-size: 0.95em;
+}
+.description a { 
+  color: var(--primary-color); 
+  text-decoration: none; 
+  font-weight: 700; 
+  font-size: 1.05em; 
+  margin-top: 12px; 
+  display: block; 
+  text-align: center;
+  transition: color 0.3s;
+}
+.description a:hover { color: #6c757d; }
+.input-group { margin-bottom: 22px; }
+.input-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-color); font-size: 0.95em; }
+.input-group input[type="text"], .input-group input[type="number"] {
+  width: 100%; padding: 13px 15px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1em; background-color: #fafafa; transition: all 0.3s;
+}
+.input-group input:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 8px rgba(249,168,38,0.3); background-color: #fff; }
+.input-group input:hover { border-color: #95a5a6; }
+.hint { color: #7f8c8d; font-size: 0.85em; margin-top: 6px; font-style: italic; }
+button {
+  width: 100%; padding: 14px 20px; background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+  color: white; border: none; border-radius: 8px; font-size: 1.15em; font-weight: 600; cursor: pointer;
+  transition: all 0.3s; margin-top: 10px; box-shadow: 0 4px 12px rgba(249,168,38,0.3);
+}
+button:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(249,168,38,0.4); }
+.result-area { margin-top: 30px; padding: 25px; border-radius: 12px; background: linear-gradient(135deg, #C9E3FF 0%, #a8d5ff 100%); border: 2px solid #a3c9f2; animation: slideIn 0.4s ease-out; }
+@keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.result-area h3 { margin: 0 0 18px 0; color: var(--text-color); font-size: 1.3em; text-align: center; }
+.result-item { display: flex; justify-content: space-between; align-items: center; margin: 14px 0; font-size: 1.05em; padding: 12px; background-color: rgba(255,255,255,0.7); border-radius: 8px; transition: all 0.3s; }
+.result-item:hover { background-color: rgba(255,255,255,0.95); transform: translateX(5px); }
+.result-item.highlight { font-size: 1.25em; font-weight: bold; background-color: rgba(255,255,255,0.9); border: 2px solid var(--primary-color); padding: 15px; }
+.result-label { flex-basis: 55%; font-weight: 500; }
+.result-value { font-weight: 700; text-align: right; flex-basis: 45%; font-size: 1.1em; }
+.result-value.positive { color: var(--positive-color); }
+.result-value.negative { color: var(--negative-color); }
+.error-message { color: var(--negative-color); text-align: center; padding: 15px; background-color: #ffe5e5; border-radius: 8px; border-left: 4px solid var(--negative-color); font-weight: 600; }
+.info-box { background-color: #e8f4f8; border-left: 4px solid #3498db; padding: 12px; margin: 20px 0; border-radius: 6px; font-size: 0.9em; color: #2c3e50; line-height: 1.6; }
+.info-box strong { color: #2980b9; }
+@media (max-width: 600px) {
+  .calculator-container { padding: 25px 18px; }
+  .calculator-container h1 { font-size: 1.6em; }
+  .result-item { flex-direction: column; align-items: flex-start; gap: 5px; }
+  .result-value { text-align: left; padding-left: 10px; font-size: 1.15em; }
+}
+</style>
+</head>
+<body>
+
+<div class="calculator-container">
+  <h1>年化報酬率計算機</h1>
+  <div class="description">
+    <strong>MWRR (Money-Weighted Rate of Return)</strong> 也稱為 IRR（內部報酬率）：適用於有定期資金投入的情況，能精確反映實際報酬率。
+    <a href="https://leveragetw.com/" target="_blank">槓桿學院</a>
+  </div>
+
+  <div class="input-group">
+    <label for="beginningValue">期初金額（Year 0）</label>
+    <input type="text" id="beginningValue" value="100000" placeholder="例如：100000">
+  </div>
+
+  <div class="input-group">
+    <label for="annualContribution">每年再投入資金（Year 1 ~ Year T 期末）</label>
+    <input type="text" id="annualContribution" value="12000" placeholder="每年定投金額，若無則填 0">
+    <small class="hint">假設每年年底投入</small>
+  </div>
+
+  <div class="input-group">
+    <label for="investmentYears">投資年數（T）</label>
+    <input type="number" id="investmentYears" value="5" min="1" max="50">
+    <small class="hint">1~50 年</small>
+  </div>
+
+  <div class="input-group">
+    <label for="endingValue">期末總資產（Year T 結束時）</label>
+    <input type="text" id="endingValue" value="180000" placeholder="最終帳戶總額">
+  </div>
+
+  <button onclick="calculateMWRR()">開始計算 MWRR / IRR</button>
+
+  <div id="resultArea" style="display:none;"></div>
+</div>
+
+<script>
+// === 1. 牛頓法 IRR ===
+function calculateIRRNewton(cashFlows, guess = 0.1) {
+  const MAX_ITER = 1000;
+  const PRECISION = 1e-8;
+  let rate = guess;
+
+  const npv = (r) => cashFlows.reduce((sum, cf, t) => sum + cf / Math.pow(1 + r, t), 0);
+  const derivative = (r) => cashFlows.reduce((sum, cf, t) => sum - cf * t / Math.pow(1 + r, t + 1), 0);
+
+  for (let i = 0; i < MAX_ITER; i++) {
+    const y = npv(rate);
+    if (Math.abs(y) < PRECISION) return rate;
+    const d = derivative(rate);
+    if (Math.abs(d) < PRECISION) break; // 避免除以 0
+    const newRate = rate - y / d;
+    if (Math.abs(newRate - rate) < PRECISION) return newRate;
+    rate = newRate;
+  }
+  return null;
+}
+
+// === 2. 二分法 IRR（備用，極穩）===
+function calculateIRRBinary(cashFlows) {
+  let low = -0.999;   // -99.9%
+  let high = 10;      // 1000%
+  const PRECISION = 1e-8;
+  const MAX_ITER = 1000;
+
+  for (let i = 0; i < MAX_ITER; i++) {
+    const mid = (low + high) / 2;
+    const npv = cashFlows.reduce((sum, cf, t) => sum + cf / Math.pow(1 + mid, t), 0);
+    if (Math.abs(npv) < PRECISION) return mid;
+    if (npv > 0) low = mid;
+    else high = mid;
+  }
+  return (low + high) / 2;
+}
+
+// === 3. 主計算函數 ===
+function calculateMWRR() {
+  const beginningValue = parseFloat(removeCommas(document.getElementById('beginningValue').value)) || 0;
+  const annualContribution = parseFloat(removeCommas(document.getElementById('annualContribution').value)) || 0;
+  const years = parseInt(document.getElementById('investmentYears').value) || 0;
+  const endingValue = parseFloat(removeCommas(document.getElementById('endingValue').value)) || 0;
+  const resultArea = document.getElementById('resultArea');
+
+  // 輸入驗證
+  if (years < 1 || years > 50 || !Number.isInteger(years)) {
+    showError("投資年數必須是 1~50 的整數");
+    return;
+  }
+  if (beginningValue < 0 || annualContribution < 0 || endingValue < 0) {
+    showError("金額不可為負數");
+    return;
+  }
+  if (beginningValue === 0 && annualContribution === 0) {
+    showError("期初金額與每年投入不能同時為 0");
+    return;
+  }
+
+  // 正確建構現金流（這才是標準 MWRR 模型！）
+  const cashFlows = [];
+  cashFlows.push(-beginningValue);                          // t=0 投入
+  for (let i = 0; i < years; i++) {
+    cashFlows.push(-annualContribution);                    // 每年末投入
+  }
+  cashFlows[cashFlows.length - 1] += endingValue;           // 最後一年：抵銷投入 + 取出全部資產
+
+  // 計算總投入
+  const totalInvestment = beginningValue + annualContribution * years;
+  const totalGainLoss = endingValue - totalInvestment;
+
+  // 計算 IRR（先牛頓法，失敗則二分法）
+  let mwrr = calculateIRRNewton(cashFlows);
+  if (mwrr === null) mwrr = calculateIRRBinary(cashFlows);
+
+  displayResults(totalInvestment, totalGainLoss, mwrr, years, endingValue);
+}
+
+// === 顯示結果 ===
+function displayResults(totalInvestment, totalGainLoss, mwrr, years, endingValue) {
+  const resultArea = document.getElementById('resultArea');
+  let html = `<div class="result-area"><h3>計算結果</h3>`;
+
+  html += `<div class="result-item"><span class="result-label">投入本金總額</span><span class="result-value">${formatCurrency(totalInvestment)}</span></div>`;
+  const gainClass = totalGainLoss >= 0 ? 'positive' : 'negative';
+  const gainLabel = totalGainLoss > 0 ? '淨獲利/虧損' : (totalGainLoss < 0 ? '淨獲利/虧損' : '淨獲利/虧損');
+  html += `<div class="result-item"><span class="result-label">${gainLabel}</span><span class="result-value ${gainClass}">${formatCurrency(totalGainLoss)}</span></div>`;
+
+  html += '<div class="result-item highlight">';
+  if (mwrr === null || !isFinite(mwrr)) {
+    html += `<span class="result-label">年化報酬率 (MWRR/IRR)</span><span class="result-value negative">無法計算</span>`;
+  } else {
+    const rateClass = mwrr >= 0 ? 'positive' : 'negative';
+    html += `<span class="result-label">年化報酬率 (MWRR)</span><span class="result-value ${rateClass}">${formatPercentage(mwrr)}</span>`;
+  }
+  html += '</div>';
+
+  if (mwrr !== null && isFinite(mwrr)) {
+    const totalReturn = ((endingValue / totalInvestment) - 1) * 100;
+    html += `<div class="info-box">
+      <strong>說明：</strong><br>
+      • 總累積報酬率：${totalReturn.toFixed(2)}%<br>
+      • 投資期間：${years} 年<br>
+      • MWRR 已正確考慮每筆資金的投入時點
+    </div>`;
+  }
+
+  html += '</div>';
+  resultArea.innerHTML = html;
+  resultArea.style.display = 'block';
+}
+
+// === 工具函數 ===
+function formatCurrency(num) { return new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(num); }
+function formatPercentage(rate) { const sign = rate >= 0 ? '+' : ''; return `${sign}${(rate * 100).toFixed(2)}%`; }
+function removeCommas(str) { return str.replace(/,/g, ''); }
+function showError(msg) {
+  document.getElementById('resultArea').innerHTML = `<div class="error-message">錯誤：${msg}</div>`;
+  document.getElementById('resultArea').style.display = 'block';
+}
+
+// === 輸入框自動千分位 ===
+document.addEventListener('DOMContentLoaded', () => {
+  const moneyInputs = ['beginningValue', 'annualContribution', 'endingValue'];
+  moneyInputs.forEach(id => {
+    const input = document.getElementById(id);
+    input.addEventListener('input', function(e) {
+      let val = e.target.value.replace(/[^\d]/g, '');
+      if (val) e.target.value = Number(val).toLocaleString('zh-TW');
+    });
+    // blur 時確保是整數
+    input.addEventListener('blur', function(e) {
+      let val = removeCommas(e.target.value);
+      if (val) e.target.value = Number(val).toLocaleString('zh-TW');
+    });
+  });
+
+  // Enter 鍵計算
+  document.querySelectorAll('input').forEach(input => {
+    input.addEventListener('keypress', e => { if (e.key === 'Enter') calculateMWRR(); });
+  });
+});
+</script>
+</body>
+</html>
