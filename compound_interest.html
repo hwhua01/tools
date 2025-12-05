@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>複利試算計算機</title>
+    <style>
+        :root {
+            --primary-color: #F9A826;
+            --primary-hover: #E6951F;
+            --accent-bg: #C9E3FF;
+            --text-color: #2c3e50;
+            --light-bg: #f4f7f6;
+            --positive-color: #27ae60;
+            --border-color: #bdc3c7;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #F4F7FB;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .calculator-container {
+            max-width: 550px;
+            width: 100%;
+            background-color: #ffffff;
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-top: 10px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .calculator-container h2 {
+            text-align: center;
+            color: var(--text-color);
+            margin-top: 0;
+            font-size: 1.9em;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+
+        .description {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.92em;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .description a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1em;
+            margin-top: 8px;
+            display: inline-block;
+            transition: color 0.3s;
+        }
+
+        .description a:hover {
+            color: #7f8c8d;
+            text-decoration: none;
+        }
+
+        .input-group {
+            margin-bottom: 22px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 0.95em;
+        }
+
+        .input-group input[type="text"] {
+            width: 100%;
+            padding: 13px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+            background-color: #fafafa;
+        }
+
+        .input-group input[type="text"]:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 8px rgba(249, 168, 38, 0.3);
+            background-color: #fff;
+        }
+
+        .input-group input[type="text"]:hover {
+            border-color: #95a5a6;
+        }
+
+        .input-group input.error {
+            border-color: #e74c3c;
+            background-color: #ffe5e5;
+        }
+
+        .hint {
+            color: #7f8c8d;
+            font-size: 0.85em;
+            display: block;
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        button.calculate-btn {
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.15em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(249, 168, 38, 0.3);
+        }
+
+        button.calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(249, 168, 38, 0.4);
+        }
+
+        button.calculate-btn:active {
+            transform: translateY(0);
+        }
+
+        .result-area {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-bg) 0%, #a8d5ff 100%);
+            border: 2px solid #a3c9f2;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-area h3 {
+            margin-top: 0;
+            margin-bottom: 18px;
+            color: var(--text-color);
+            font-size: 1.3em;
+            text-align: center;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 14px 0;
+            font-size: 1.05em;
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 12px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .result-item:hover {
+            background-color: rgba(255, 255, 255, 0.95);
+            transform: translateX(5px);
+        }
+
+        .result-item.highlight {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 2px solid var(--positive-color);
+            font-weight: bold;
+            font-size: 1.15em;
+        }
+
+        .result-label {
+            flex-basis: 60%;
+            font-weight: 500;
+        }
+
+        .result-value {
+            font-weight: 700;
+            text-align: right;
+            flex-basis: 40%;
+            font-size: 1.1em;
+            color: var(--primary-color);
+        }
+
+        .result-item.highlight .result-value {
+            color: var(--positive-color);
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            padding: 15px;
+            background-color: #ffe5e5;
+            border-radius: 8px;
+            border-left: 4px solid #e74c3c;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+
+        .info-box {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 12px;
+            margin: 20px 0 0 0;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            color: #2980b9;
+        }
+
+        .roi-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-left: 8px;
+            background-color: rgba(39, 174, 96, 0.15);
+            color: var(--positive-color);
+        }
+
+        @media (max-width: 600px) {
+            .calculator-container {
+                padding: 25px 18px;
+            }
+
+            .calculator-container h2 {
+                font-size: 1.6em;
+            }
+
+            .result-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+
+            .result-value {
+                text-align: left;
+                padding-left: 10px;
+                font-size: 1.15em;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator-container">
+    <h2>📈 複利試算計算機</h2>
+
+    <div class="description">
+        假設<strong>每月複利計息</strong>及<strong>每月定額投入</strong>，計算長期投資的複利效果。<br>
+        <a href="https://leveragetw.com/" target="_blank">槓桿學院</a>
+    </div>
+
+    <div class="input-group">
+        <label for="initialPrincipal">💰 初始投入本金（元）</label>
+        <input type="text" id="initialPrincipal" value="100,000" placeholder="初始投入金額" aria-label="初始投入本金">
+    </div>
+
+    <div class="input-group">
+        <label for="monthlyDeposit">📊 每月定期投入（元）</label>
+        <input type="text" id="monthlyDeposit" value="10,000" placeholder="每月投入金額" aria-label="每月定期投入">
+        <small class="hint">若無每月投入，請輸入 0</small>
+    </div>
+
+    <div class="input-group">
+        <label for="annualRate">📈 年化報酬率（%）</label>
+        <input type="text" id="annualRate" value="6" placeholder="預期年化報酬率" aria-label="年化報酬率">
+        <small class="hint">例如：6 代表 6% 年化報酬</small>
+    </div>
+
+    <div class="input-group">
+        <label for="investmentYears">⏰ 投資期間（年）</label>
+        <input type="text" id="investmentYears" value="20" placeholder="投資年數" aria-label="投資期間">
+        <small class="hint">建議：1-60 年</small>
+    </div>
+
+    <button class="calculate-btn" id="calculateBtn">🚀 開始試算</button>
+
+    <div id="resultArea" style="display: none;"></div>
+</div>
+
+<script>
+'use strict';
+
+// ============ 常數定義 ============
+
+const CONSTANTS = {
+    COMPOUNDING_FREQ: 12, // 每月複利
+    MAX_YEARS: 60,
+    MIN_YEARS: 1
+};
+
+// ============ 工具函數 ============
+
+const NumberUtils = {
+    formatCurrency(amount) {
+        return new Intl.NumberFormat('zh-TW', {
+            style: 'currency',
+            currency: 'TWD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(Math.round(amount));
+    },
+
+    formatPercentage(rate) {
+        const sign = rate >= 0 ? '+' : '';
+        return `${sign}${rate.toFixed(2)}%`;
+    },
+
+    parseNumber(value, defaultValue = 0) {
+        const cleaned = typeof value === 'string' ? value.replace(/,/g, '') : value;
+        const parsed = parseFloat(cleaned);
+        return isNaN(parsed) ? defaultValue : parsed;
+    },
+
+    removeCommas(value) {
+        return value.replace(/,/g, '');
+    },
+
+    formatWithCommas(value) {
+        return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+};
+
+// ============ 輸入驗證 ============
+
+const Validator = {
+    validateCompoundInputs(inputs) {
+        const errors = [];
+        const { initialPrincipal, monthlyDeposit, annualRate, investmentYears } = inputs;
+
+        if (initialPrincipal < 0) {
+            errors.push('初始本金不能為負數');
+        }
+
+        if (monthlyDeposit < 0) {
+            errors.push('每月投入不能為負數');
+        }
+
+        if (initialPrincipal === 0 && monthlyDeposit === 0) {
+            errors.push('初始本金和每月投入不能同時為 0');
+        }
+
+        if (annualRate < 0) {
+            errors.push('年化報酬率不能為負數');
+        }
+
+        if (annualRate > 100) {
+            errors.push('年化報酬率不能超過 100%');
+        }
+
+        if (investmentYears < CONSTANTS.MIN_YEARS || investmentYears > CONSTANTS.MAX_YEARS) {
+            errors.push(`投資期間必須在 ${CONSTANTS.MIN_YEARS}-${CONSTANTS.MAX_YEARS} 年之間`);
+        }
+
+        if (!Number.isInteger(investmentYears)) {
+            errors.push('投資期間必須是整數');
+        }
+
+        return errors;
+    }
+};
+
+// ============ 複利計算器 ============
+
+class CompoundInterestCalculator {
+    constructor() {
+        this.inputs = {
+            initialPrincipal: document.getElementById('initialPrincipal'),
+            monthlyDeposit: document.getElementById('monthlyDeposit'),
+            annualRate: document.getElementById('annualRate'),
+            investmentYears: document.getElementById('investmentYears')
+        };
+        this.resultArea = document.getElementById('resultArea');
+    }
+
+    getInputValues() {
+        return {
+            initialPrincipal: NumberUtils.parseNumber(this.inputs.initialPrincipal.value),
+            monthlyDeposit: NumberUtils.parseNumber(this.inputs.monthlyDeposit.value),
+            annualRate: NumberUtils.parseNumber(this.inputs.annualRate.value),
+            investmentYears: parseInt(NumberUtils.removeCommas(this.inputs.investmentYears.value)) || 0
+        };
+    }
+
+    calculate() {
+        UIController.clearErrors();
+
+        const inputs = this.getInputValues();
+        const errors = Validator.validateCompoundInputs(inputs);
+
+        if (errors.length > 0) {
+            UIController.showError(errors[0]);
+            return;
+        }
+
+        const results = this.performCalculations(inputs);
+        UIController.showResults(results);
+    }
+
+    performCalculations(inputs) {
+        const { initialPrincipal, monthlyDeposit, annualRate, investmentYears } = inputs;
+
+        // 轉換變數
+        const r = annualRate / 100; // 年報酬率（小數）
+        const i = r / CONSTANTS.COMPOUNDING_FREQ; // 月報酬率（小數）
+        const N = investmentYears * CONSTANTS.COMPOUNDING_FREQ; // 總期數（月）
+
+        // A. 初始本金的未來價值
+        const fvPrincipal = initialPrincipal * Math.pow(1 + i, N);
+
+        // B. 定期定額的未來價值
+        let fvDeposit = 0;
+        if (i > 0) {
+            fvDeposit = monthlyDeposit * (Math.pow(1 + i, N) - 1) / i;
+        } else {
+            fvDeposit = monthlyDeposit * N;
+        }
+
+        // C. 最終總資產
+        const finalValue = fvPrincipal + fvDeposit;
+
+        // D. 總投入本金
+        const totalPrincipal = initialPrincipal + (monthlyDeposit * N);
+
+        // E. 總複利收益
+        const totalInterest = finalValue - totalPrincipal;
+
+        // F. 總報酬率
+        const totalReturn = totalPrincipal > 0 ? ((finalValue / totalPrincipal - 1) * 100) : 0;
+
+        return {
+            totalPrincipal,
+            totalInterest,
+            finalValue,
+            totalReturn,
+            investmentYears,
+            annualRate
+        };
+    }
+}
+
+// ============ UI 控制器 ============
+
+const UIController = {
+    showError(message) {
+        const resultArea = document.getElementById('resultArea');
+        resultArea.innerHTML = `<div class="error-message">⚠️ ${message}</div>`;
+        resultArea.style.display = 'block';
+    },
+
+    showResults(data) {
+        const { totalPrincipal, totalInterest, finalValue, totalReturn, investmentYears, annualRate } = data;
+
+        const html = `
+            <div class="result-area">
+                <h3>💎 試算結果</h3>
+
+                <div class="result-item">
+                    <span class="result-label">💵 總投入本金</span>
+                    <span class="result-value">${NumberUtils.formatCurrency(totalPrincipal)}</span>
+                </div>
+
+                <div class="result-item">
+                    <span class="result-label">📈 總複利收益</span>
+                    <span class="result-value">${NumberUtils.formatCurrency(totalInterest)}</span>
+                </div>
+
+                <div class="result-item highlight">
+                    <span class="result-label">💰 最終總資產</span>
+                    <span class="result-value">
+                        ${NumberUtils.formatCurrency(finalValue)}
+                        <span class="roi-badge">${NumberUtils.formatPercentage(totalReturn)}</span>
+                    </span>
+                </div>
+
+                <div class="info-box">
+                    <strong>💡 說明：</strong><br>
+                    • 投資期間：${investmentYears} 年（${investmentYears * 12} 個月）<br>
+                    • 年化報酬率：${annualRate}%<br>
+                    • 總報酬率：${NumberUtils.formatPercentage(totalReturn)}<br>
+                    • 複利增值：${NumberUtils.formatCurrency(totalInterest)}（${((totalInterest / totalPrincipal) * 100).toFixed(2)}%）
+                </div>
+            </div>
+        `;
+
+        const resultArea = document.getElementById('resultArea');
+        resultArea.innerHTML = html;
+        resultArea.style.display = 'block';
+    },
+
+    clearErrors() {
+        document.querySelectorAll('input.error').forEach(input => {
+            input.classList.remove('error');
+        });
+    }
+};
+
+// ============ 輸入格式化 ============
+
+class InputFormatter {
+    constructor(inputId) {
+        this.input = document.getElementById(inputId);
+        if (this.input) {
+            this.init();
+        }
+    }
+    
+    init() {
+        this.input.addEventListener('focus', (e) => this.handleFocus(e));
+        this.input.addEventListener('blur', (e) => this.handleBlur(e));
+        this.input.addEventListener('input', (e) => this.handleInput(e));
+        
+        // 初始化時格式化現有值
+        if (this.input.value) {
+            const value = NumberUtils.removeCommas(this.input.value);
+            const num = parseFloat(value);
+            if (!isNaN(num)) {
+                this.input.value = NumberUtils.formatWithCommas(Math.round(num).toString());
+            }
+        }
+    }
+    
+    handleFocus(e) {
+        const value = NumberUtils.removeCommas(e.target.value);
+        if (value) {
+            e.target.value = value;
+        }
+    }
+    
+    handleInput(e) {
+        let value = e.target.value;
+        
+        // 只允許數字和小數點
+        value = value.replace(/[^\d.]/g, '');
+        
+        // 確保只有一個小數點
+        const parts = value.split('.');
+        if (parts.length > 2) {
+            value = parts[0] + '.' + parts.slice(1).join('');
+        }
+        
+        e.target.value = value;
+    }
+    
+    handleBlur(e) {
+        let value = e.target.value;
+        if (value) {
+            const num = parseFloat(value);
+            if (!isNaN(num)) {
+                // 年化報酬率和投資年數不需要千位符號
+                if (e.target.id === 'annualRate') {
+                    e.target.value = num.toString();
+                } else {
+                    e.target.value = NumberUtils.formatWithCommas(Math.round(num).toString());
+                }
+            }
+        }
+    }
+}
+
+// ============ 應用初始化 ============
+
+document.addEventListener('DOMContentLoaded', () => {
+    const calculator = new CompoundInterestCalculator();
+
+    // 設置輸入格式化
+    ['initialPrincipal', 'monthlyDeposit', 'annualRate', 'investmentYears'].forEach(id => {
+        new InputFormatter(id);
+    });
+
+    // 計算按鈕
+    document.getElementById('calculateBtn').addEventListener('click', () => {
+        calculator.calculate();
+    });
+
+    // Enter 鍵觸發
+    document.querySelectorAll('input').forEach(input => {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                calculator.calculate();
+            }
+        });
+    });
+});
+</script>
+
+</body>
+</html>
