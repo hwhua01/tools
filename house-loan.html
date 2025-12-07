@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>房屋購買與房貸計算機</title>
+    <style>
+        :root {
+            --primary-color:#F9A826; 
+            --primary-hover:#E6951F; 
+            --accent-bg:#C9E3FF;
+            --text-color:#2c3e50; 
+            --light-bg:#F4F7FB; 
+            --negative-color:#e74c3c;
+            --positive-color:#27ae60;
+            --border-color:#bdc3c7;
+            --disabled-bg: #f5f7fa;
+            --disabled-border: #d0d6dc;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family:'Segoe UI',Tahoma,Helvetica,Arial,sans-serif;
+            background: #F4F7FB;
+            min-height:100vh;
+            padding:20px;
+            display:flex;
+            justify-content:center;
+            align-items:flex-start;
+        }
+        .calculator-container {
+            max-width:680px;
+            width:100%;
+            background:#fff;
+            padding:40px;
+            border-radius:20px;
+            box-shadow:0 20px 60px rgba(0,0,0,0.3);
+            animation:fadeIn .5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity:0; transform:translateY(-30px) scale(0.95); }
+            to { opacity:1; transform:translateY(0) scale(1); }
+        }
+        h2 {
+            text-align:center;
+            color:var(--text-color);
+            margin-bottom:10px;
+            font-size:2em;
+        }
+        .subtitle {
+            text-align:center;
+            color:#7f8c8d;
+            font-size:0.9em;
+            margin-bottom:25px;
+            padding-bottom:20px;
+            border-bottom:2px solid #e0e0e0;
+        }
+        .subtitle a {
+            color:var(--primary-color);
+            text-decoration:none;
+            font-weight:700;
+            transition:color 0.3s;
+        }
+        .subtitle a:hover {
+            color:#7f8c8d;
+        }
+        .section-header {
+            font-size:1.1em;
+            font-weight:700;
+            color:var(--text-color);
+            margin:25px 0 15px 0;
+            padding-left:10px;
+            border-left:4px solid var(--primary-color);
+        }
+        .input-group {
+            margin-bottom:18px;
+        }
+        .input-group label {
+            display:block;
+            margin-bottom:8px;
+            font-weight:600;
+            color:var(--text-color);
+            font-size:0.95em;
+        }
+        /* 注意：這裡把 input[type="text"] 與 input[type="number"] 一起套用相同樣式，確保 UI 與原本完全一致 */
+        .input-group input[type="number"],
+        .input-group input[type="text"],
+        .input-group select {
+            width:100%;
+            padding:12px 16px;
+            border:2px solid var(--border-color);
+            border-radius:10px;
+            font-size:1em;
+            background:#fafafa;
+            transition:all .3s;
+        }
+        .input-group input[type="number"]:focus,
+        .input-group input[type="text"]:focus, 
+        .input-group select:focus {
+            border-color:var(--primary-color);
+            outline:none;
+            box-shadow:0 0 0 3px rgba(249,168,38,0.1);
+            background:#fff;
+        }
+        .hint {
+            color:#95a5a6;
+            font-size:0.85em;
+            margin-top:6px;
+            display:block;
+        }
+        
+        /* 分段利率樣式 */
+        .rate-container {
+            background:#f8f9fa;
+            padding:20px;
+            border-radius:12px;
+            margin-bottom:20px;
+        }
+        .rate-row {
+            display:flex;
+            align-items:center;
+            gap:10px;
+            margin-bottom:15px;
+            flex-wrap:wrap;
+            padding:12px;
+            background:#fff;
+            border-radius:8px;
+            border:2px solid #e0e0e0;
+            transition:all 0.3s;
+        }
+        .rate-row:hover {
+            border-color:var(--primary-color);
+            box-shadow:0 2px 8px rgba(249,168,38,0.1);
+        }
+        .rate-row label {
+            min-width:95px;
+            font-weight:600;
+            color:var(--text-color);
+            font-size:0.95em;
+        }
+        .rate-row input {
+            width:85px;
+            padding:8px 10px;
+            border:2px solid var(--border-color);
+            border-radius:8px;
+            font-size:0.95em;
+            text-align:center;
+            background:#fafafa;
+            transition:all .3s;
+        }
+        .rate-row input:focus {
+            border-color:var(--primary-color);
+            outline:none;
+            box-shadow:0 0 0 3px rgba(249,168,38,0.1);
+            background:#fff;
+        }
+        .rate-row span {
+            color:#7f8c8d;
+            font-size:0.95em;
+            font-weight:500;
+        }
+
+        /* disabled / 反白 樣式 */
+        .disabled-stage {
+            background: var(--disabled-bg);
+            border-color: var(--disabled-border) !important;
+            opacity: 0.95;
+        }
+        .disabled-stage input {
+            background: var(--disabled-bg) !important;
+            border-color: var(--disabled-border) !important;
+            color: #7d8690;
+            pointer-events: none;
+        }
+        
+        .btn-primary {
+            width:100%;
+            padding:15px 20px;
+            background:linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+            color:#fff;
+            border:none;
+            border-radius:12px;
+            font-size:1.1em;
+            font-weight:700;
+            cursor:pointer;
+            box-shadow:0 6px 20px rgba(249,168,38,0.3);
+            transition:all .3s;
+            margin-top:10px;
+        }
+        .btn-primary:hover {
+            transform:translateY(-3px);
+            box-shadow:0 8px 25px rgba(249,168,38,0.4);
+        }
+        .btn-primary:active {
+            transform:translateY(-1px);
+        }
+        .btn-secondary {
+            width:100%;
+            padding:12px 20px;
+            background:#95a5a6;
+            color:#fff;
+            border:none;
+            border-radius:12px;
+            font-size:1em;
+            font-weight:600;
+            cursor:pointer;
+            margin-top:10px;
+            transition:all .3s;
+        }
+        .btn-secondary:hover {
+            background:#7f8c8d;
+            transform:translateY(-2px);
+        }
+        
+        .result-area {
+            margin-top:30px;
+            padding:25px;
+            border-radius:16px;
+            background:linear-gradient(135deg, var(--accent-bg) 0%, #a8d5ff 100%);
+            border:3px solid #a3c9f2;
+            display:none;
+            animation:slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity:0; transform:translateY(30px); }
+            to { opacity:1; transform:translateY(0); }
+        }
+        .result-area h3 {
+            text-align:center;
+            color:var(--text-color);
+            margin-bottom:20px;
+            font-size:1.4em;
+        }
+        .result-item {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:12px 15px;
+            margin:12px 0;
+            background:rgba(255,255,255,0.85);
+            border-radius:10px;
+            color:var(--text-color);
+            transition:all 0.3s;
+        }
+        .result-item:hover {
+            background:rgba(255,255,255,0.95);
+            transform:translateX(5px);
+        }
+        .result-item.highlight {
+            border:2px solid var(--primary-color);
+            font-weight:700;
+            background:rgba(255,255,255,0.95);
+        }
+        .result-label {
+            font-weight:500;
+        }
+        .result-value {
+            font-weight:700;
+            font-size:1.05em;
+        }
+        .result-value.positive {
+            color:var(--positive-color);
+        }
+        .result-value.negative {
+            color:var(--negative-color);
+        }
+        .info-box {
+            background:#e8f4f8;
+            border-left:4px solid #3498db;
+            padding:15px;
+            border-radius:8px;
+            margin-top:15px;
+            color:#2c3e50;
+            line-height:1.8;
+        }
+        .info-box strong {
+            color:#2980b9;
+        }
+        
+        /* Modal */
+        .modal-backdrop {
+            position:fixed;
+            inset:0;
+            background:rgba(0,0,0,0.6);
+            display:none;
+            align-items:center;
+            justify-content:center;
+            z-index:9999;
+            backdrop-filter:blur(5px);
+        }
+        .modal-backdrop.show {
+            display:flex;
+        }
+        .modal-dialog {
+            background:#fff;
+            padding:25px;
+            border-radius:16px;
+            width:92%;
+            max-width:500px;
+            box-shadow:0 20px 60px rgba(0,0,0,0.3);
+            animation:modalPop 0.3s ease-out;
+        }
+        @keyframes modalPop {
+            from { opacity:0; transform:scale(0.8); }
+            to { opacity:1; transform:scale(1); }
+        }
+        .modal-dialog h4 {
+            color:var(--negative-color);
+            margin-bottom:15px;
+            font-size:1.3em;
+        }
+        .modal-dialog ul {
+            margin:15px 0;
+            padding-left:20px;
+        }
+        .modal-dialog li {
+            margin:8px 0;
+            color:var(--text-color);
+        }
+        .modal-actions {
+            margin-top:20px;
+            text-align:right;
+        }
+        .btn-ok {
+            background:var(--primary-color);
+            color:#fff;
+            border:none;
+            padding:10px 24px;
+            border-radius:8px;
+            font-weight:700;
+            cursor:pointer;
+            transition:all 0.3s;
+        }
+        .btn-ok:hover {
+            background:var(--primary-hover);
+            transform:translateY(-2px);
+        }
+        
+        @media (max-width:600px) {
+            .calculator-container {
+                padding:25px 20px;
+            }
+            h2 {
+                font-size:1.6em;
+            }
+            .rate-row {
+                flex-direction:column;
+                align-items:flex-start;
+            }
+            .rate-row label {
+                min-width:auto;
+            }
+            .result-item {
+                flex-direction:column;
+                align-items:flex-start;
+                gap:5px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="calculator-container">
+    <h2>🏡 房屋購買與房貸計算機</h2>
+    <div class="subtitle">
+        精準計算房貸成本，輕鬆規劃購屋預算<br>
+        <a href="https://leveragetw.com/" target="_blank">槓桿學院</a>
+    </div>
+
+    <div class="section-header">📋 基本資訊</div>
+    
+    <div class="input-group">
+        <label for="purchasePrice">🏠 房屋總價 (萬元)</label>
+        <!-- 保持原本位置與大小，type 改為 text 以方便顯示千分符；樣式與原本相同 -->
+        <input type="text" id="purchasePrice" value="1000" aria-label="房屋總價">
+        <small class="hint">例如：一千萬請輸入 1000（千位符會自動顯示）</small>
+    </div>
+
+    <div class="input-group">
+        <label for="downPayment">💰 自備款 / 頭期款 (萬元)</label>
+        <input type="text" id="downPayment" value="200" aria-label="自備款">
+    </div>
+
+    <div class="input-group">
+        <label for="loanTerm">⏰ 貸款總年期 (年)</label>
+        <input type="number" id="loanTerm" value="30" min="1" step="1">
+    </div>
+
+    <div class="input-group">
+        <label for="gracePeriod">🕊️ 寬限期 (年)</label>
+        <select id="gracePeriod">
+            <option value="0" selected>0 年（無寬限期）</option>
+            <option value="1">1 年</option>
+            <option value="2">2 年</option>
+            <option value="3">3 年</option>
+            <option value="4">4 年</option>
+            <option value="5">5 年</option>
+        </select>
+        <small class="hint">寬限期內只繳利息，利率採用第一階段年利率</small>
+    </div>
+
+    <div class="section-header">📊 分段式利率設定</div>
+    
+    <div class="rate-container">
+        <div id="rateRow1" class="rate-row">
+            <label>第一段利率</label>
+            <input type="number" id="stage1Start" placeholder="" step="1" min="1">
+            <span>~</span>
+            <input type="number" id="stage1End" placeholder="" step="1" min="1">
+            <span>月</span>
+            <input type="number" id="stage1Rate" placeholder="" step="0.01" min="0">
+            <span>%</span>
+        </div>
+
+        <div id="rateRow2" class="rate-row">
+            <label>第二段利率</label>
+            <input type="number" id="stage2Start" placeholder="" step="1" min="1">
+            <span>~</span>
+            <input type="number" id="stage2End" placeholder="" step="1" min="1">
+            <span>月</span>
+            <input type="number" id="stage2Rate" placeholder="" step="0.01" min="0">
+            <span>%</span>
+        </div>
+
+        <div id="rateRow3" class="rate-row">
+            <label>第三段利率</label>
+            <input type="number" id="stage3Start" placeholder="" step="1" min="1">
+            <span>~</span>
+            <input type="number" id="stage3End" placeholder="" step="1" min="1">
+            <span>月</span>
+            <input type="number" id="stage3Rate" placeholder="" step="0.01" min="0">
+            <span>%</span>
+        </div>
+    </div>
+    
+    <small class="hint" style="margin-top:-10px; display:block;">
+        💡 <strong>填寫提示：</strong><br>
+        • 若無寬限期：第一段從第 1 月開始<br>
+        • 若有寬限期（如 2 年 = 24 個月）：第一段應從第 25 月開始（系統會自動填入）<br>
+        • 各段期數必須連續且覆蓋到貸款結束<br>
+        • 若只有單一利率，僅填第一段即可
+    </small>
+
+    <div class="section-header">💵 其他費用</div>
+
+    <div class="input-group">
+        <label for="brokerFeeRate">🏢 房仲服務費 (買方 %)</label>
+        <input type="number" id="brokerFeeRate" value="1" min="0" max="2" step="0.1">
+        <small class="hint">通常上限為成交價的 2% (買方)</small>
+    </div>
+
+    <div class="input-group">
+        <label for="estimatedClosingCosts">📄 估計雜項稅費 (萬元)</label>
+        <input type="number" id="estimatedClosingCosts" value="5" min="0" step="1">
+        <small class="hint">包含代書費、契稅、印花稅等估計值</small>
+    </div>
+
+    <button class="btn-primary" id="startCalcBtn">🚀 開始計算總費用</button>
+    <button class="btn-secondary" onclick="location.reload()">🔄 重新計算</button>
+
+    <div id="resultArea" class="result-area">
+        <h3>📊 試算結果總覽</h3>
+        <div class="result-item highlight">
+            <span class="result-label">💸 貸款總金額</span>
+            <span id="loanAmount" class="result-value"></span>
+        </div>
+        <div class="result-item">
+            <span class="result-label">⏳ 總繳款月數</span>
+            <span id="totalMonths" class="result-value"></span>
+        </div>
+        <div id="stagePayments"></div>
+        <div class="result-item highlight">
+            <span class="result-label">📈 平均每月還款</span>
+            <span id="avgPayment" class="result-value"></span>
+        </div>
+        <div class="result-item">
+            <span class="result-label">💔 總計支付利息</span>
+            <span id="totalInterest" class="result-value negative"></span>
+        </div>
+        <div class="result-item highlight">
+            <span class="result-label">💰 總還款金額 (本金+利息)</span>
+            <span id="totalRepayment" class="result-value"></span>
+        </div>
+        <div class="result-item">
+            <span class="result-label">🏢 房仲服務費</span>
+            <span id="brokerFeeAmount" class="result-value"></span>
+        </div>
+        <div class="result-item">
+            <span class="result-label">📄 總雜項成本（含房仲費）</span>
+            <span id="totalTransactionCosts" class="result-value"></span>
+        </div>
+        <div class="result-item highlight">
+            <span class="result-label">💵 購屋總自備現金</span>
+            <span id="totalUpfrontCash" class="result-value"></span>
+        </div>
+        <div class="result-item highlight">
+            <span class="result-label">🏠 房屋最終總支出成本</span>
+            <span id="totalCost" class="result-value"></span>
+        </div>
+        <div class="info-box" id="detailInfo"></div>
+    </div>
+</div>
+
+<!-- Alert Modal -->
+<div id="alertModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <h4>⚠️ 輸入錯誤</h4>
+        <div id="alertModalBody"></div>
+        <div class="modal-actions">
+            <button class="btn-ok" id="alertOkBtn">我知道了</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const TEN_THOUSAND = 10000;
+
+/* -------------------------
+   千位符處理工具
+   ------------------------- */
+// 從含千分符的字串解析數字（允許小數），回傳 Number（若無效回 NaN）
+function parseNumberFromInputStr(s) {
+    if (typeof s !== 'string') return NaN;
+    const clean = s.replace(/,/g, '').trim();
+    if (clean === '') return NaN;
+    return Number(clean);
+}
+
+// 把字串或數字格式化為千分位顯示（保留小數部分）
+function formatWithThousands(valStrOrNum) {
+    if (valStrOrNum === null || valStrOrNum === undefined) return '';
+    const s = String(valStrOrNum).trim();
+    if (s === '') return '';
+    const parts = s.replace(/,/g,'').split('.');
+    let intPart = parts[0].replace(/^0+(?=\d)/,''); // 去前導零
+    if (intPart === '') intPart = '0';
+    const decPart = parts.length > 1 ? parts[1] : null;
+    intPart = Number(intPart).toLocaleString('zh-TW');
+    return decPart !== null ? `${intPart}.${decPart}` : intPart;
+}
+
+// 清理輸入（允許數字與一個小數點）
+function sanitizeInputForDisplay(raw) {
+    const cleaned = raw.replace(/[^\d.]/g, '');
+    const firstDotIndex = cleaned.indexOf('.');
+    if (firstDotIndex === -1) return cleaned;
+    const before = cleaned.slice(0, firstDotIndex + 1);
+    const after = cleaned.slice(firstDotIndex + 1).replace(/\./g, '');
+    return before + after;
+}
+
+// 即時格式化輸入（input 事件）
+function handleFormattedInputInput(e) {
+    const node = e.target;
+    const raw = node.value;
+    const caretFromEnd = node.value.length - node.selectionStart;
+    const sanitized = sanitizeInputForDisplay(raw);
+    const formatted = formatWithThousands(sanitized);
+    node.value = formatted;
+    try {
+        const pos = Math.max(0, node.value.length - caretFromEnd);
+        node.setSelectionRange(pos, pos);
+    } catch (err) {}
+}
+
+// blur 時嚴格處理：若非數字則清空，否則格式化（保留小數）
+function handleFormattedInputBlur(e) {
+    const node = e.target;
+    const raw = node.value;
+    const parsed = parseNumberFromInputStr(raw);
+    if (!isFinite(parsed)) {
+        node.value = '';
+        return;
+    }
+    node.value = formatWithThousands(String(parsed));
+}
+
+/* -------------------------
+   原有計算/驗證函數（維持原邏輯，但讀取 purchasePrice/downPayment 時解析千分符）
+   ------------------------- */
+
+function formatTenThousands(amountInYuan, precision = 2) {
+    const v = Number(amountInYuan) / TEN_THOUSAND;
+    if (!isFinite(v)) return '0 萬元';
+    return v.toLocaleString('zh-TW', { 
+        minimumFractionDigits: precision, 
+        maximumFractionDigits: precision 
+    }) + ' 萬元';
+}
+
+function monthlyPaymentFor(P, annualRate, months) {
+    P = Number(P); 
+    months = Number(months);
+    if (!isFinite(P) || !isFinite(months) || months <= 0 || P <= 0) return 0;
+    const r = annualRate / 12 / 100;
+    if (r === 0) return P / months;
+    const f = Math.pow(1 + r, months);
+    return P * (r * f) / (f - 1);
+}
+
+function remainingBalanceAfterPayments(P, annualRate, payment, k) {
+    P = Number(P); 
+    k = Number(k);
+    if (!isFinite(P) || !isFinite(k) || k <= 0) return P;
+    const r = annualRate / 12 / 100;
+    if (r === 0) return Math.max(0, P - payment * k);
+    const f = Math.pow(1 + r, k);
+    return Math.max(0, P * f - payment * ((f - 1) / r));
+}
+
+// DOM 元素
+const el = {
+    purchasePrice: document.getElementById('purchasePrice'),
+    downPayment: document.getElementById('downPayment'),
+    loanTerm: document.getElementById('loanTerm'),
+    gracePeriod: document.getElementById('gracePeriod'),
+    stage1Start: document.getElementById('stage1Start'),
+    stage1End: document.getElementById('stage1End'),
+    stage1Rate: document.getElementById('stage1Rate'),
+    stage2Start: document.getElementById('stage2Start'),
+    stage2End: document.getElementById('stage2End'),
+    stage2Rate: document.getElementById('stage2Rate'),
+    stage3Start: document.getElementById('stage3Start'),
+    stage3End: document.getElementById('stage3End'),
+    stage3Rate: document.getElementById('stage3Rate'),
+    rateRow2: document.getElementById('rateRow2'),
+    rateRow3: document.getElementById('rateRow3'),
+    brokerFeeRate: document.getElementById('brokerFeeRate'),
+    estimatedClosingCosts: document.getElementById('estimatedClosingCosts'),
+    resultArea: document.getElementById('resultArea'),
+    loanAmount: document.getElementById('loanAmount'),
+    totalMonths: document.getElementById('totalMonths'),
+    stagePayments: document.getElementById('stagePayments'),
+    avgPayment: document.getElementById('avgPayment'),
+    brokerFeeAmount: document.getElementById('brokerFeeAmount'),
+    totalTransactionCosts: document.getElementById('totalTransactionCosts'),
+    totalUpfrontCash: document.getElementById('totalUpfrontCash'),
+    totalInterest: document.getElementById('totalInterest'),
+    totalRepayment: document.getElementById('totalRepayment'),
+    totalCost: document.getElementById('totalCost'),
+    detailInfo: document.getElementById('detailInfo'),
+    startCalcBtn: document.getElementById('startCalcBtn'),
+    alertModal: document.getElementById('alertModal'),
+    alertModalBody: document.getElementById('alertModalBody'),
+    alertOkBtn: document.getElementById('alertOkBtn')
+};
+
+// Modal 函數
+function showAlertModal(messages) {
+    el.alertModalBody.innerHTML = '<ul style="margin-left:16px;text-align:left;">' + 
+        messages.map(m => `<li>${m}</li>`).join('') + '</ul>';
+    el.alertModal.classList.add('show');
+    el.alertModal.setAttribute('aria-hidden', 'false');
+    setTimeout(() => el.alertOkBtn.focus(), 10);
+}
+
+function hideAlertModal() {
+    el.alertModal.classList.remove('show');
+    el.alertModal.setAttribute('aria-hidden', 'true');
+    setTimeout(() => el.startCalcBtn.focus(), 10);
+}
+
+// 小工具：安全 parseInt
+function toIntSafe(v) {
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? n : null;
+}
+
+// 驗證分段利率輸入
+function validateStageInputs(totalMonths, graceMonths) {
+    const errors = [];
+    const stages = [];
+    
+    for (let i = 1; i <= 3; i++) {
+        const start = el[`stage${i}Start`].value;
+        const end = el[`stage${i}End`].value;
+        const rate = el[`stage${i}Rate`].value;
+        
+        const filled = [start, end, rate].filter(v => v !== '').length;
+        
+        if (filled > 0 && filled < 3) {
+            errors.push(`第${i}段利率的欄位未完整填寫（起始月、結束月、利率必須全部填寫）`);
+            continue;
+        }
+        
+        if (filled === 3) {
+            const s = parseInt(start, 10);
+            const e = parseInt(end, 10);
+            const r = parseFloat(rate);
+            
+            if (!Number.isInteger(s) || s < 1) {
+                errors.push(`第${i}段利率的起始月必須為正整數`);
+                continue;
+            }
+            if (!Number.isInteger(e) || e < 1) {
+                errors.push(`第${i}段利率的結束月必須為正整數`);
+                continue;
+            }
+            if (!isFinite(r) || r < 0) {
+                errors.push(`第${i}段利率必須為非負數`);
+                continue;
+            }
+            
+            if (e < s) {
+                errors.push(`第${i}段利率的結束月 (${e}) 不能小於起始月 (${s})`);
+                continue;
+            }
+            
+            if (e > totalMonths) {
+                errors.push(`第${i}段利率的結束月 (${e}) 超過貸款總期數 (${totalMonths})`);
+                continue;
+            }
+            
+            stages.push({ stage: i, start: s, end: e, rate: r });
+        }
+    }
+    
+    if (stages.length === 0 && errors.length === 0) {
+        errors.push('至少需要填寫一段利率');
+        return { valid: false, errors, stages: [] };
+    }
+    
+    if (errors.length > 0) {
+        return { valid: false, errors, stages: [] };
+    }
+    
+    stages.sort((a, b) => a.start - b.start);
+    
+    const repaymentStartMonth = graceMonths + 1;
+    const expectedStart = graceMonths > 0 ? repaymentStartMonth : 1;
+    
+    if (stages[0].start !== expectedStart) {
+        if (graceMonths > 0) {
+            errors.push(`有寬限期 ${graceMonths} 個月，第一段利率應從第 ${repaymentStartMonth} 月開始（目前從第 ${stages[0].start} 月開始）`);
+        } else {
+            errors.push(`第一段利率必須從第 1 月開始（目前從第 ${stages[0].start} 月開始）`);
+        }
+    }
+    
+    for (let i = 0; i < stages.length - 1; i++) {
+        const current = stages[i];
+        const next = stages[i + 1];
+        
+        if (next.start !== current.end + 1) {
+            if (next.start <= current.end) {
+                errors.push(`第${current.stage}段 (${current.start}-${current.end}) 與第${next.stage}段 (${next.start}-${next.end}) 有重疊`);
+            } else {
+                errors.push(`第${current.stage}段結束於第 ${current.end} 月，但第${next.stage}段從第 ${next.start} 月開始，中間有間隙`);
+            }
+        }
+    }
+    
+    const lastStage = stages[stages.length - 1];
+    if (lastStage.end < totalMonths) {
+        errors.push(`最後一段利率結束於第 ${lastStage.end} 月，但貸款總期數為 ${totalMonths} 月，未完全覆蓋`);
+    }
+    
+    return { valid: errors.length === 0, errors, stages };
+}
+
+// 主計算函數（解析千分符）
+function calculateMortgage() {
+    const P_tm_raw = el.purchasePrice.value;
+    const D_tm_raw = el.downPayment.value;
+    const P_tm_num = parseNumberFromInputStr(P_tm_raw); // 萬元單位
+    const D_tm_num = parseNumberFromInputStr(D_tm_raw); // 萬元單位
+
+    const P_tm = isFinite(P_tm_num) ? P_tm_num : 0;
+    const D_tm = isFinite(D_tm_num) ? D_tm_num : 0;
+
+    const T = Math.max(0, parseInt(el.loanTerm.value, 10) || 0);
+    const graceYears = Math.max(0, parseInt(el.gracePeriod.value, 10) || 0);
+
+    if (P_tm <= 0 || T <= 0) {
+        showAlertModal(["房屋總價與貸款年期必須大於零"]);
+        return;
+    }
+
+    const P_Yuan = P_tm * TEN_THOUSAND;
+    const D_Yuan = D_tm * TEN_THOUSAND;
+    const L = P_Yuan - D_Yuan;
+    const totalMonths = T * 12;
+    const graceMonths = Math.min(totalMonths, graceYears * 12);
+    const monthsAfterGrace = Math.max(0, totalMonths - graceMonths);
+
+    const BrokerRate = Number(el.brokerFeeRate.value) / 100 || 0;
+    const C_closing_Yuan = (Number(el.estimatedClosingCosts.value) || 0) * TEN_THOUSAND;
+
+    if (L <= 0) {
+        renderFullPaymentCase(P_Yuan, BrokerRate, C_closing_Yuan);
+        return;
+    }
+
+    const validation = validateStageInputs(totalMonths, graceMonths);
+    if (!validation.valid) {
+        showAlertModal(validation.errors);
+        return;
+    }
+
+    const stages = validation.stages;
+    
+    // 計算寬限期利息
+    let totalInterest = 0;
+    let stageHTML = '';
+    
+    if (graceMonths > 0) {
+        const rGrace = stages[0].rate;
+        const monthlyInterestOnly = L * (rGrace / 12 / 100);
+        const graceInterestTotal = monthlyInterestOnly * graceMonths;
+        totalInterest += graceInterestTotal;
+        stageHTML += `<div class="result-item"><span class="result-label">🕊️ 寬限期（第 1-${graceMonths} 期）— 每月利息</span><span class="result-value">${formatTenThousands(monthlyInterestOnly,4)}</span></div>`;
+    }
+
+    // 計算各階段還款
+    let remainingPrincipal = L;
+    let monthsRemainingForCalc = monthsAfterGrace;
+
+    function computeStage(stageMonths, annualRate) {
+        if (stageMonths <= 0) return null;
+        if (!isFinite(annualRate)) annualRate = 0;
+        const payment = monthlyPaymentFor(remainingPrincipal, annualRate, monthsRemainingForCalc);
+        const balanceAfter = remainingBalanceAfterPayments(remainingPrincipal, annualRate, payment, stageMonths);
+        const interestPaid = payment * stageMonths - (remainingPrincipal - balanceAfter);
+        return { payment, balanceAfter, interestPaid };
+    }
+
+    for (let stageInfo of stages) {
+        const stageMonths = stageInfo.end - stageInfo.start + 1;
+        const res = computeStage(stageMonths, stageInfo.rate);
+        
+        if (res) {
+            totalInterest += res.interestPaid;
+            stageHTML += `<div class="result-item"><span class="result-label">📍 第${stageInfo.stage}段 (第 ${stageInfo.start}-${stageInfo.end} 期, ${stageInfo.rate}%)</span><span class="result-value">${formatTenThousands(res.payment,4)}</span></div>`;
+            remainingPrincipal = res.balanceAfter;
+            monthsRemainingForCalc -= stageMonths;
+        }
+    }
+
+    // 計算總成本
+    const brokerFeeAmount = P_Yuan * BrokerRate;
+    const totalTransactionCosts = brokerFeeAmount + C_closing_Yuan;
+    const totalUpfrontCash = D_Yuan + totalTransactionCosts;
+    const totalRepayment = L + totalInterest;
+    const avgPayment = totalRepayment / totalMonths;
+    const totalCost = P_Yuan + totalInterest + totalTransactionCosts;
+
+    // 顯示結果
+    el.loanAmount.textContent = formatTenThousands(L);
+    el.totalMonths.textContent = `${totalMonths} 個月${graceMonths > 0 ? `（含寬限期 ${graceMonths} 期）` : ''}`;
+    el.stagePayments.innerHTML = stageHTML || '<div class="info-box">※ 無分段或分段月付為 0</div>';
+    el.avgPayment.textContent = formatTenThousands(avgPayment,2);
+    el.totalInterest.textContent = formatTenThousands(totalInterest);
+    el.brokerFeeAmount.textContent = formatTenThousands(brokerFeeAmount);
+    el.totalTransactionCosts.textContent = formatTenThousands(totalTransactionCosts);
+    el.totalUpfrontCash.textContent = formatTenThousands(totalUpfrontCash);
+    el.totalRepayment.textContent = formatTenThousands(totalRepayment);
+    el.totalCost.textContent = formatTenThousands(totalCost);
+
+    const interestRatio = L > 0 ? ((totalInterest / L) * 100).toFixed(2) : '0.00';
+    let detailHTML = '<strong>💡 詳細說明：</strong><br>';
+    detailHTML += `• 貸款本金：${formatTenThousands(L)}<br>`;
+    detailHTML += `• 總繳款期數：${totalMonths} 個月` ;
+    if (graceMonths > 0) {
+        detailHTML += `（寬限期 ${graceMonths} 期，正式攤還期 ${monthsAfterGrace} 期）`;
+    }
+    detailHTML += `<br>`;
+    detailHTML += `• 總利息支出：${formatTenThousands(totalInterest)}<br>`;
+    detailHTML += `• 利息佔貸款比例：${interestRatio}%<br>`;
+    detailHTML += `• 房仲費：${formatTenThousands(brokerFeeAmount)}<br>`;
+    detailHTML += `• 總雜項成本（含房仲費）：${formatTenThousands(totalTransactionCosts)}<br>`;
+    if (graceMonths > 0) {
+        detailHTML += `<br><strong>⚠️ 寬限期說明：</strong><br>`;
+        detailHTML += `寬限期內只繳利息，利率採用第一階段利率（${stages[0].rate}%），本金不攤還。`;
+    }
+    el.detailInfo.innerHTML = detailHTML;
+
+    el.resultArea.style.display = 'block';
+}
+
+// 全額付清情況
+function renderFullPaymentCase(P_Yuan, BrokerRate, C_closing_Yuan) {
+    const brokerFeeAmount = P_Yuan * BrokerRate;
+    const totalTransactionCosts = brokerFeeAmount + C_closing_Yuan;
+    const totalUpfrontCash = P_Yuan + totalTransactionCosts;
+    
+    el.loanAmount.textContent = formatTenThousands(0);
+    el.totalMonths.textContent = `0 個月`;
+    el.stagePayments.innerHTML = `<div class="info-box">✅ 全額付清，無需貸款</div>`;
+    el.avgPayment.textContent = formatTenThousands(0,2);
+    el.brokerFeeAmount.textContent = formatTenThousands(brokerFeeAmount);
+    el.totalTransactionCosts.textContent = formatTenThousands(totalTransactionCosts);
+    el.totalUpfrontCash.textContent = formatTenThousands(totalUpfrontCash);
+    el.totalInterest.textContent = formatTenThousands(0);
+    el.totalRepayment.textContent = formatTenThousands(0);
+    el.totalCost.textContent = formatTenThousands(totalUpfrontCash);
+    el.detailInfo.innerHTML = '<strong>💡 說明：</strong><br>您選擇全額付清，無需支付任何貸款利息。<br>• 總雜項成本（含房仲費）：' + formatTenThousands(totalTransactionCosts) + '。';
+    el.resultArea.style.display = 'block';
+}
+
+/* ---------------------------
+   禁用/反白 控制函式（不變）
+   --------------------------- */
+function setStage2and3Disabled(disabled) {
+    const ids2 = ['stage2Start','stage2End','stage2Rate'];
+    const ids3 = ['stage3Start','stage3End','stage3Rate'];
+    if (disabled) {
+        ids2.forEach(id => {
+            document.getElementById(id).value = '';
+            document.getElementById(id).disabled = true;
+        });
+        ids3.forEach(id => {
+            document.getElementById(id).value = '';
+            document.getElementById(id).disabled = true;
+        });
+        document.getElementById('rateRow2').classList.add('disabled-stage');
+        document.getElementById('rateRow3').classList.add('disabled-stage');
+    } else {
+        ids2.forEach(id => {
+            document.getElementById(id).disabled = false;
+        });
+        ids3.forEach(id => {
+            document.getElementById(id).disabled = false;
+        });
+        document.getElementById('rateRow2').classList.remove('disabled-stage');
+        document.getElementById('rateRow3').classList.remove('disabled-stage');
+    }
+}
+
+function setStage3Disabled(disabled) {
+    const ids3 = ['stage3Start','stage3End','stage3Rate'];
+    if (disabled) {
+        ids3.forEach(id => {
+            document.getElementById(id).value = '';
+            document.getElementById(id).disabled = true;
+        });
+        document.getElementById('rateRow3').classList.add('disabled-stage');
+    } else {
+        ids3.forEach(id => {
+            document.getElementById(id).disabled = false;
+        });
+        document.getElementById('rateRow3').classList.remove('disabled-stage');
+    }
+}
+
+/* ---------------------------
+   自動同步起始月份（含手動覆寫保護）
+   --------------------------- */
+
+// 追蹤使用者是否手動編輯過某個 start 欄位（若 true，則不要自動覆寫）
+const manualEdit = {
+    stage2Start: false,
+    stage3Start: false
+};
+
+// 註冊使用者手動編輯啟用 flag
+['stage2Start','stage3Start'].forEach(id => {
+    const node = document.getElementById(id);
+    node.addEventListener('input', () => {
+        manualEdit[id] = node.value !== '';
+    });
+});
+
+// syncStageStarts：更強健的同步邏輯
+function syncStageStarts() {
+    const totalMonths = (parseInt(document.getElementById('loanTerm').value, 10) || 0) * 12;
+    const graceYears = parseInt(document.getElementById('gracePeriod').value, 10) || 0;
+    const graceMonths = Math.min(totalMonths, graceYears * 12);
+    const expectedFirstStart = graceMonths > 0 ? (graceMonths + 1) : 1;
+
+    if (graceMonths > 0) {
+        document.getElementById('stage1Start').value = expectedFirstStart;
+    } else {
+        if (!document.getElementById('stage1Start').value) {
+            document.getElementById('stage1Start').value = 1;
+        }
+    }
+
+    const s1end = toIntSafe(document.getElementById('stage1End').value);
+    const s2end = toIntSafe(document.getElementById('stage2End').value);
+
+    if (s1end !== null && !document.getElementById('stage2Start').disabled) {
+        const autoVal = s1end + 1;
+        if (!manualEdit.stage2Start) {
+            document.getElementById('stage2Start').value = Math.min(autoVal, totalMonths);
+        }
+    }
+
+    if (s2end !== null && !document.getElementById('stage3Start').disabled) {
+        const autoVal2 = s2end + 1;
+        if (!manualEdit.stage3Start) {
+            document.getElementById('stage3Start').value = Math.min(autoVal2, totalMonths);
+        }
+    }
+
+    ['stage1Start','stage2Start','stage3Start'].forEach(id => {
+        const node = document.getElementById(id);
+        const v = toIntSafe(node.value);
+        if (v !== null && v > totalMonths) {
+            node.value = totalMonths;
+        }
+    });
+
+    if (s1end !== null && s1end >= totalMonths) {
+        setStage2and3Disabled(true);
+    } else {
+        setStage2and3Disabled(false);
+        if (s2end !== null && s2end >= totalMonths) {
+            setStage3Disabled(true);
+        } else {
+            setStage3Disabled(false);
+        }
+    }
+}
+
+/* ---------------------------
+   事件綁定
+   --------------------------- */
+
+// 兩個欄位（purchasePrice / downPayment）加上即時千位符處理
+['purchasePrice','downPayment'].forEach(id => {
+    const node = document.getElementById(id);
+    if (!node) return;
+    node.addEventListener('input', handleFormattedInputInput);
+    node.addEventListener('blur', handleFormattedInputBlur);
+    node.addEventListener('paste', () => {
+        setTimeout(() => {
+            node.value = sanitizeInputForDisplay(node.value);
+            node.value = formatWithThousands(node.value);
+        }, 0);
+    });
+});
+
+// 當使用者改變 stage1End 或 stage2End 或 loanTerm/gracePeriod 時，立刻同步
+['stage1End','stage2End','gracePeriod','loanTerm'].forEach(id => {
+    const node = document.getElementById(id);
+    if (node) {
+        node.addEventListener('change', syncStageStarts);
+        node.addEventListener('blur', syncStageStarts);
+        node.addEventListener('input', syncStageStarts);
+    }
+});
+
+// 如果使用者清空了 stage2Start/stage3Start（手動刪掉），將視為取消手動覆寫，允許後續自動填回
+['stage2Start','stage3Start'].forEach(id => {
+    const node = document.getElementById(id);
+    node.addEventListener('blur', () => {
+        if (node.value === '') {
+            manualEdit[id] = false;
+            syncStageStarts();
+        }
+    });
+});
+
+// 其它事件監聽
+document.getElementById('startCalcBtn').addEventListener('click', calculateMortgage);
+document.getElementById('alertOkBtn').addEventListener('click', hideAlertModal);
+
+// Enter 鍵觸發計算（包含 text inputs）
+document.querySelectorAll('input').forEach(input => {
+    input.addEventListener('keypress', e => {
+        if (e.key === 'Enter') calculateMortgage();
+    });
+});
+
+// 初次載入同步與格式化
+document.addEventListener('DOMContentLoaded', () => {
+    // 格式化預設顯示值（有千位符）
+    const pp = document.getElementById('purchasePrice');
+    const dp = document.getElementById('downPayment');
+    if (pp) pp.value = formatWithThousands(pp.value || '');
+    if (dp) dp.value = formatWithThousands(dp.value || '');
+    // 保持分段邏輯原本行為
+    document.getElementById('stage1Start').value = '';
+    document.getElementById('stage2Start').value = '';
+    document.getElementById('stage3Start').value = '';
+    manualEdit.stage2Start = false;
+    manualEdit.stage3Start = false;
+    syncStageStarts();
+});
+</script>
+</body>
+</html>
