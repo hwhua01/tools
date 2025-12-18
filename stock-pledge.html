@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票質押計算機</title>
+    <style>
+        :root {
+            --primary-color: #F9A826;
+            --primary-hover: #E6951F;
+            --accent-bg: #C9E3FF;
+            --text-color: #2c3e50;
+            --light-bg: #f4f7f6;
+            --negative-color: #e74c3c;
+            --positive-color: #27ae60;
+            --warning-color: #f39c12;
+            --border-color: #d1d5db;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background: #F9FAFB;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .calculator-container {
+            max-width: 500px;
+            width: 100%;
+            background-color: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-top: 10px;
+        }
+
+        .calculator-container h2 {
+            text-align: center;
+            color: var(--text-color);
+            margin-top: 0;
+            font-size: 1.9em;
+            border-bottom: 3px solid #F9A826;
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+
+        .description {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.92em;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            padding: 12px;
+            background-color: #FFF8E1;
+            border-radius: 8px;
+            border-left: 4px solid #F9A826;
+        }
+
+        .description a {
+            color: #F9A826;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1em;
+            margin-top: 8px;
+            display: inline-block;
+            transition: color 0.3s;
+        }
+
+        .description a:hover {
+            color: #6c757d;
+            text-decoration: none;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.9em;
+        }
+
+        .input-group label .icon {
+            font-size: 1.1em;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-group input[type="number"],
+        .input-group input[type="text"] {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.2s;
+            background-color: #ffffff;
+            color: var(--text-color);
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .input-group input:hover:not(:focus) {
+            border-color: #9ca3af;
+        }
+
+        .input-suffix {
+            position: absolute;
+            right: 14px;
+            color: #6b7280;
+            font-size: 0.9em;
+            pointer-events: none;
+        }
+
+        .fetch-group {
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+
+        .fetch-group input {
+            flex-grow: 1;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+            color: white;
+            margin-top: 10px;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--positive-color) 0%, #229954 100%);
+            color: white;
+            min-width: 100px;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .result-area {
+            margin-top: 24px;
+            padding: 25px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #C9E3FF 0%, #a8d5ff 100%);
+            border: 2px solid #a3c9f2;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-area h3 {
+            margin-top: 0;
+            margin-bottom: 18px;
+            color: var(--text-color);
+            font-size: 1.3em;
+            text-align: center;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 14px 0;
+            font-size: 1.05em;
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 12px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .result-item:hover {
+            background-color: rgba(255, 255, 255, 0.95);
+            transform: translateX(5px);
+        }
+
+        .result-item.highlight {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 2px solid #F9A826;
+            font-weight: bold;
+        }
+
+        .result-item.warning {
+            background-color: #ffe5e5;
+            border: 2px solid var(--negative-color);
+            font-weight: bold;
+        }
+
+        .result-label {
+            flex-basis: 60%;
+            font-weight: 500;
+        }
+
+        .result-value {
+            font-weight: 700;
+            text-align: right;
+            flex-basis: 40%;
+            font-size: 1.1em;
+            color: #F9A826;
+        }
+
+        .result-item.highlight .result-value {
+            color: #F9A826;
+        }
+
+        .result-item.warning .result-value {
+            color: var(--negative-color);
+        }
+
+        .error-message {
+            color: var(--negative-color);
+            text-align: center;
+            padding: 15px;
+            background-color: #FEE2E2;
+            border-radius: 8px;
+            border-left: 4px solid var(--negative-color);
+            font-weight: 500;
+            margin-top: 20px;
+        }
+
+        .info-box {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 12px;
+            margin: 20px 0;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+        
+        .info-box.success-message {
+            background-color: #e8fbed;
+            border-left: 4px solid var(--positive-color);
+        }
+
+        .info-box strong {
+            color: #2980b9;
+        }
+        
+        .info-box.success-message strong {
+            color: var(--positive-color);
+        }
+
+        .hint {
+            color: #6B7280;
+            font-size: 0.8em;
+            display: block;
+            margin-top: 6px;
+        }
+
+        @media (max-width: 600px) {
+            .calculator-container {
+                padding: 20px 16px;
+            }
+
+            .input-row {
+                grid-template-columns: 1fr;
+            }
+
+            .fetch-group {
+                flex-direction: column;
+            }
+
+            .btn-success {
+                width: 100%;
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator-container">
+    <h2>🔒 股票質押貸款試算</h2>
+
+    <div class="description">
+        假設<strong>到期本金一次還清</strong>，期間只繳利息。<br>輸入股票代號可自動查詢最新股價（支援上市櫃）。<br>
+        <a href="https://leveragetw.com/" target="_blank">槓桿學院</a>
+    </div>
+
+    <div class="input-group">
+        <label for="stockTicker">
+            <span class="icon">📈</span>
+            <span>股票代號</span>
+        </label>
+        <div class="fetch-group">
+            <input type="text" id="stockTicker" value="0050" placeholder="請輸入股票代號" aria-label="股票代號">
+            <button id="fetchPriceBtn" class="btn btn-success">
+                <span class="btn-text">查找價格</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="input-group">
+        <label for="currentPrice">
+            <span class="icon">💵</span>
+            <span>現股股價 (元)</span>
+        </label>
+        <input type="number" id="currentPrice" value="61.9" min="0.01" step="0.01" placeholder="請輸入股價" aria-label="現股股價">
+    </div>
+
+    <div class="input-group">
+        <label for="shareCountLots">
+            <span class="icon">📊</span>
+            <span>質押張數 (張)</span>
+        </label>
+        <input type="number" id="shareCountLots" value="10" min="1" step="1" placeholder="請輸入張數" aria-label="質押張數">
+    </div>
+
+    <div class="input-row">
+        <div class="input-group">
+            <label for="pledgeRatio">
+                <span class="icon">🎯</span>
+                <span>成數 (%)</span>
+            </label>
+            <input type="number" id="pledgeRatio" value="60" min="0" max="100" step="1" placeholder="60" aria-label="質押成數">
+        </div>
+
+        <div class="input-group">
+            <label for="maintenanceRatio">
+                <span class="icon">⚠️</span>
+                <span>維持率門檻 (%)</span>
+            </label>
+            <input type="number" id="maintenanceRatio" value="140" min="100" max="200" step="1" placeholder="140" aria-label="維持率">
+        </div>
+    </div>
+
+    <div class="input-row">
+        <div class="input-group">
+            <label for="annualRate">
+                <span class="icon">💰</span>
+                <span>年利率 (%)</span>
+            </label>
+            <input type="number" id="annualRate" value="3.5" min="0" step="0.1" placeholder="3.5" aria-label="年利率">
+        </div>
+
+        <div class="input-group">
+            <label for="loanTermMonths">
+                <span class="icon">📅</span>
+                <span>期限 (月)</span>
+            </label>
+            <input type="number" id="loanTermMonths" value="12" min="1" max="60" placeholder="12" aria-label="貸款期限">
+        </div>
+    </div>
+
+    <button id="calculateBtn" class="btn btn-primary">🚀 開始試算</button>
+
+    <div id="resultArea" style="display: none;"></div>
+</div>
+
+<script>
+'use strict';
+
+// ============ 常數定義 ============
+
+const CONSTANTS = {
+    SHARES_PER_LOT: 1000,
+    DEFAULT_MAINTENANCE_RATIO: 1.40,
+    API_TIMEOUT: 10000
+};
+
+// ============ 工具函數 ============
+
+const NumberUtils = {
+    formatCurrency(amount) {
+        return new Intl.NumberFormat('zh-TW', {
+            style: 'currency',
+            currency: 'TWD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(Math.round(amount));
+    },
+
+    formatPrice(price) {
+        return `${price.toFixed(2)} 元`;
+    },
+
+    parseNumber(value, defaultValue = 0) {
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? defaultValue : parsed;
+    }
+};
+
+// ============ 股價查詢服務 (多重 API 備援策略) ============
+
+class StockPriceService {
+    constructor() {
+        this.cache = new Map();
+        // API 優先順序配置
+        this.apiProviders = [
+            {
+                name: 'Yahoo Finance (allorigins)',
+                fetch: this.fetchFromYahooAllOrigins.bind(this),
+                priority: 1
+            },
+            {
+                name: 'Yahoo Finance (corsproxy)',
+                fetch: this.fetchFromYahooCorsProxy.bind(this),
+                priority: 2
+            },
+            {
+                name: 'Yahoo Finance (cors.sh)',
+                fetch: this.fetchFromYahooCorssh.bind(this),
+                priority: 3
+            }
+        ];
+    }
+
+    // API 1: AllOrigins 代理
+    async fetchFromYahooAllOrigins(symbol) {
+        const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`;
+        
+        const response = await this.fetchWithTimeout(proxyUrl, CONSTANTS.API_TIMEOUT);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        return data.chart?.result?.[0]?.meta?.regularMarketPrice || null;
+    }
+
+    // API 2: corsproxy.io 代理
+    async fetchFromYahooCorsProxy(symbol) {
+        const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`;
+        
+        const response = await this.fetchWithTimeout(proxyUrl, CONSTANTS.API_TIMEOUT);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        return data.chart?.result?.[0]?.meta?.regularMarketPrice || null;
+    }
+
+    // API 3: cors.sh 代理
+    async fetchFromYahooCorssh(symbol) {
+        const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
+        const proxyUrl = `https://cors.sh/${yahooUrl}`;
+        
+        const response = await this.fetchWithTimeout(proxyUrl, CONSTANTS.API_TIMEOUT);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        return data.chart?.result?.[0]?.meta?.regularMarketPrice || null;
+    }
+
+    // 多重 API 備援查詢
+    async fetchPriceWithFallback(symbol) {
+        const errors = [];
+        
+        // 依優先順序嘗試每個 API
+        for (const provider of this.apiProviders) {
+            try {
+                const price = await provider.fetch(symbol);
+                if (price !== null) {
+                    console.log(`✅ 成功使用 ${provider.name} 查詢到價格`);
+                    return price;
+                }
+            } catch (error) {
+                console.warn(`⚠️ ${provider.name} 失敗:`, error.message);
+                errors.push(`${provider.name}: ${error.message}`);
+            }
+        }
+        
+        // 所有 API 都失敗
+        throw new Error(`所有 API 來源均失敗\n${errors.join('\n')}`);
+    }
+
+    async fetchPrice(ticker) {
+        if (!ticker || ticker.trim() === '') {
+            throw new Error('請輸入有效的股票或ETF代號');
+        }
+
+        const normalizedTicker = ticker.trim();
+        
+        // 檢查快取（延長到 3 分鐘）
+        const cached = this.cache.get(normalizedTicker);
+        if (cached && Date.now() - cached.timestamp < 180000) {
+            console.log('📦 使用快取資料');
+            return cached.price;
+        }
+
+        // 依序嘗試：1. 上市 (.TW) 2. 上櫃 (無後綴) 3. 上櫃備用 (.TWO)
+        const symbolsToTry = [
+            `${normalizedTicker}.TW`, 
+            normalizedTicker,
+            `${normalizedTicker}.TWO`
+        ];
+        
+        let price = null;
+        let lastError = null;
+
+        for (const symbol of symbolsToTry) {
+            try {
+                price = await this.fetchPriceWithFallback(symbol);
+                if (price !== null) {
+                    break;
+                }
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    lastError = error;
+                }
+            }
+        }
+        
+        if (price !== null) {
+            // 快取結果
+            this.cache.set(normalizedTicker, {
+                price,
+                timestamp: Date.now()
+            });
+            return price;
+        } else {
+            if (lastError) {
+                throw lastError;
+            }
+            throw new Error('找不到價格資料，請確認代號是否正確或手動輸入價格');
+        }
+    }
+
+    async fetchWithTimeout(url, timeout) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+        try {
+            const response = await fetch(url, {
+                signal: controller.signal,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            return response;
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                throw new Error('請求超時');
+            }
+            throw error;
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    }
+}
+
+// ============ 輸入驗證 ============
+
+const Validator = {
+    validatePledgeInputs(inputs) {
+        const errors = [];
+        const { currentPrice, shareCountLots, pledgeRatio, annualRate, loanTermMonths, maintenanceRatio } = inputs;
+
+        if (currentPrice <= 0) {
+            errors.push('股價必須大於 0');
+        }
+
+        if (shareCountLots <= 0 || !Number.isInteger(shareCountLots)) {
+            errors.push('質押張數必須是大於 0 的整數');
+        }
+
+        if (pledgeRatio <= 0 || pledgeRatio > 100) {
+            errors.push('質押成數必須在 0-100% 之間');
+        }
+
+        if (annualRate < 0) {
+            errors.push('年利率不能為負數');
+        }
+
+        if (loanTermMonths <= 0 || !Number.isInteger(loanTermMonths)) {
+            errors.push('貸款期限必須是大於 0 的整數');
+        }
+
+        if (loanTermMonths > 60) {
+            errors.push('貸款期限不能超過 60 個月');
+        }
+
+        if (maintenanceRatio < 100 || maintenanceRatio > 200) {
+            errors.push('維持率門檻必須在 100-200% 之間');
+        }
+
+        return errors;
+    }
+};
+
+// ============ 質押計算器 ============
+
+class PledgeCalculator {
+    constructor() {
+        this.inputs = {
+            stockTicker: document.getElementById('stockTicker'),
+            currentPrice: document.getElementById('currentPrice'),
+            shareCountLots: document.getElementById('shareCountLots'),
+            pledgeRatio: document.getElementById('pledgeRatio'),
+            annualRate: document.getElementById('annualRate'),
+            loanTermMonths: document.getElementById('loanTermMonths'),
+            maintenanceRatio: document.getElementById('maintenanceRatio')
+        };
+        this.resultArea = document.getElementById('resultArea');
+    }
+
+    getInputValues() {
+        return {
+            currentPrice: NumberUtils.parseNumber(this.inputs.currentPrice.value),
+            shareCountLots: parseInt(this.inputs.shareCountLots.value) || 0,
+            pledgeRatio: NumberUtils.parseNumber(this.inputs.pledgeRatio.value) / 100,
+            annualRate: NumberUtils.parseNumber(this.inputs.annualRate.value) / 100,
+            loanTermMonths: parseInt(this.inputs.loanTermMonths.value) || 0,
+            maintenanceRatio: NumberUtils.parseNumber(this.inputs.maintenanceRatio.value) / 100
+        };
+    }
+
+    calculate() {
+        UIController.clearErrors();
+
+        const inputs = this.getInputValues();
+        const errors = Validator.validatePledgeInputs({
+            ...inputs,
+            pledgeRatio: inputs.pledgeRatio * 100,
+            annualRate: inputs.annualRate * 100,
+            maintenanceRatio: inputs.maintenanceRatio * 100
+        });
+
+        if (errors.length > 0) {
+            UIController.showError(errors[0]);
+            return;
+        }
+
+        const results = this.performCalculations(inputs);
+        UIController.showResults(results);
+    }
+
+    performCalculations(inputs) {
+        const { currentPrice, shareCountLots, pledgeRatio, annualRate, loanTermMonths, maintenanceRatio } = inputs;
+
+        // 總股數
+        const totalShares = shareCountLots * CONSTANTS.SHARES_PER_LOT;
+
+        // 質押股票總市值
+        const marketValue = currentPrice * totalShares;
+
+        // 最大貸款金額
+        const maxLoanAmount = marketValue * pledgeRatio;
+
+        // 總利息成本（簡單利息）
+        const totalInterest = maxLoanAmount * annualRate * (loanTermMonths / 12);
+
+        // 到期應繳總額
+        const totalPayment = maxLoanAmount + totalInterest;
+
+        // 預估補繳價格（使用自訂維持率）
+        const remedyPrice = (maintenanceRatio * maxLoanAmount) / totalShares;
+
+        return {
+            marketValue,
+            maxLoanAmount,
+            totalInterest,
+            totalPayment,
+            remedyPrice,
+            currentPrice,
+            pledgeRatio: pledgeRatio * 100,
+            maintenanceRatio: maintenanceRatio * 100
+        };
+    }
+}
+
+// ============ UI 控制器 ============
+
+const UIController = {
+    showError(message) {
+        const resultArea = document.getElementById('resultArea');
+        resultArea.innerHTML = `<div class="error-message">⚠️ ${message}</div>`;
+        resultArea.style.display = 'block';
+    },
+
+    showResults(data) {
+        const { marketValue, maxLoanAmount, totalInterest, totalPayment, remedyPrice, currentPrice, pledgeRatio, maintenanceRatio } = data;
+
+        const html = `
+            <div class="result-area">
+                <h3>📊 試算結果</h3>
+
+                <div class="result-item">
+                    <span class="result-label">📈 質押股票總市值</span>
+                    <span class="result-value">${NumberUtils.formatCurrency(marketValue)}</span>
+                </div>
+
+                <div class="result-item highlight">
+                    <span class="result-label">💰 最大貸款金額</span>
+                    <span class="result-value">${NumberUtils.formatCurrency(maxLoanAmount)}</span>
+                </div>
+
+                <div class="result-item">
+                    <span class="result-label">💵 總利息成本（期間）</span>
+                    <span class="result-value">${NumberUtils.formatCurrency(totalInterest)}</span>
+                </div>
+
+                <div class="result-item">
+                    <span class="result-label">🏦 到期本金應繳總額</span>
+                    <span class="result-value">${NumberUtils.formatCurrency(totalPayment)}</span>
+                </div>
+
+                <div class="result-item warning">
+                    <span class="result-label">⚠️ 預估補繳價格（維持率${maintenanceRatio.toFixed(0)}%）</span>
+                    <span class="result-value">${NumberUtils.formatPrice(remedyPrice)}</span>
+                </div>
+
+                <div class="info-box">
+                    <strong>💡 說明：</strong><br>
+                    • 當前股價：${NumberUtils.formatPrice(currentPrice)}<br>
+                    • 質押成數：${pledgeRatio.toFixed(0)}%<br>
+                    • 當股價跌破 ${NumberUtils.formatPrice(remedyPrice)} 時，可能需要補繳保證金或補足股票
+                </div>
+            </div>
+        `;
+
+        const resultArea = document.getElementById('resultArea');
+        resultArea.innerHTML = html;
+        resultArea.style.display = 'block';
+    },
+
+    clearErrors() {
+        document.querySelectorAll('input.error').forEach(input => {
+            input.classList.remove('error');
+        });
+    },
+
+    setButtonLoading(button, isLoading) {
+        const textSpan = button.querySelector('.btn-text');
+        if (isLoading) {
+            textSpan.innerHTML = '<span class="loading"></span>';
+            button.disabled = true;
+        } else {
+            textSpan.textContent = '查找價格';
+            button.disabled = false;
+        }
+    }
+};
+
+// ============ 股價查詢控制器 ============
+
+class StockPriceController {
+    constructor() {
+        this.service = new StockPriceService();
+        this.tickerInput = document.getElementById('stockTicker');
+        this.priceInput = document.getElementById('currentPrice');
+        this.fetchBtn = document.getElementById('fetchPriceBtn');
+    }
+
+    async fetchAndUpdate() {
+        const ticker = this.tickerInput.value.trim();
+
+        if (!ticker) {
+            alert('請輸入股票或ETF代號');
+            return;
+        }
+
+        UIController.setButtonLoading(this.fetchBtn, true);
+
+        try {
+            const price = await this.service.fetchPrice(ticker);
+            this.priceInput.value = price.toFixed(2);
+            
+            // 顯示成功訊息
+            this.showSuccessMessage(ticker, price);
+
+        } catch (error) {
+            alert(`查詢失敗：${error.message}\n\n請手動輸入價格或稍後再試。`);
+        } finally {
+            UIController.setButtonLoading(this.fetchBtn, false);
+        }
+    }
+
+    showSuccessMessage(ticker, price) {
+        const message = document.createElement('div');
+        message.className = 'info-box success-message';
+        message.style.marginTop = '15px';
+        message.innerHTML = `<strong>✅ 成功：</strong>代號 ${ticker} 的最新價格為 ${NumberUtils.formatPrice(price)}`;
+        
+        const container = document.querySelector('.calculator-container');
+        const existingMessage = container.querySelector('.info-box.success-message');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+        
+        container.insertBefore(message, document.getElementById('calculateBtn'));
+
+        setTimeout(() => message.remove(), 5000);
+    }
+}
+
+// ============ 應用初始化 ============
+
+document.addEventListener('DOMContentLoaded', () => {
+    const calculator = new PledgeCalculator();
+    const stockPriceController = new StockPriceController();
+
+    // 計算按鈕
+    document.getElementById('calculateBtn').addEventListener('click', () => {
+        calculator.calculate();
+    });
+
+    // 查找股價按鈕
+    document.getElementById('fetchPriceBtn').addEventListener('click', () => {
+        stockPriceController.fetchAndUpdate();
+    });
+
+    // Enter 鍵觸發
+    document.querySelectorAll('input').forEach(input => {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                if (input.id === 'stockTicker') {
+                    stockPriceController.fetchAndUpdate();
+                } else {
+                    calculator.calculate();
+                }
+            }
+        });
+    });
+});
+</script>
+
+</body>
+</html>
