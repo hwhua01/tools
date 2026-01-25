@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10年期信貸精確試算工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card { transition: all 0.3s ease; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans">
+
+<div class="max-w-5xl mx-auto p-6">
+    <!-- Header -->
+    <div class="text-center mb-10">
+        <h1 class="text-3xl font-bold text-blue-800 mb-2">10年期信貸精確試算工具</h1>
+        <p class="text-slate-500">輸入金額，即時對比五大銀行專案「最低」與「最高」總費用年百分率負擔</p>
+    </div>
+
+    <!-- Input Section -->
+    <div class="bg-white rounded-2xl p-8 shadow-sm mb-8 border border-slate-200">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <div>
+                <label class="block text-sm font-semibold mb-2 text-slate-700">欲貸款金額 (新台幣)</label>
+                <div class="relative">
+                    <span class="absolute left-4 top-3 text-slate-400 font-bold">$</span>
+                    <input type="number" id="loanAmount" value="1000000" step="10000"
+                           class="w-full pl-10 pr-4 py-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-xl font-bold outline-none">
+                </div>
+                <p class="text-xs text-slate-400 mt-2">* 預設分 120 期 (10年) 本息平均攤還</p>
+            </div>
+            <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <h4 class="text-sm font-bold text-blue-800 mb-1">💡 觀察重點</h4>
+                <p class="text-sm text-blue-700 leading-relaxed">
+                    最終利率視個人信用而定。下方同步顯示該專案「總費用年百分率」區間的 **兩極化試算**，協助您做最壞打算的財務準備。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="space-y-6" id="resultsList">
+        <!-- JS will inject cards here -->
+    </div>
+
+    <!-- Assumptions Section -->
+    <div class="mt-8 p-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            試算假設條件與說明
+        </h3>
+        <ul class="space-y-3 text-sm text-slate-600">
+            <li class="flex items-start">
+                <span class="text-blue-500 mr-2">●</span>
+                <span><b>還款方式：</b> 統一採用「本息平均攤還法」計算。每個月償還的本金加利息合計金額是固定的。</span>
+            </li>
+            <li class="flex items-start">
+                <span class="text-blue-500 mr-2">●</span>
+                <span><b>對比基準：</b> 左側顯示專案最低總費用年百分率結果，右側顯示最高總費用年百分率結果。</span>
+            </li>
+            <li class="flex items-start">
+                <span class="text-blue-500 mr-2">●</span>
+                <span><b>總費用年百分率說明：</b> 包含貸款年利率、開辦費、徵信費等已知的一次性成本。</span>
+            </li>
+            <li class="flex items-start">
+                <span class="text-blue-500 mr-2">●</span>
+                <span><b>浮動利率說明：</b> 銀行信貸利率多隨定儲利率指數調整，若未來升息或降息，還款金額將隨之變動。</span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Summary Footer -->
+    <div class="mt-8 p-6 bg-slate-800 rounded-2xl text-white">
+        <h3 class="text-lg font-bold mb-3 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1a1 1 0 112 0v1a1 1 0 11-2 0zM13.536 14.95a1 1 0 010-1.414l.707-.707a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414 0zM6.464 14.95l.707-.707a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414 0z"></path></h3></svg>
+            財務決策分析
+        </h3>
+        <p class="text-slate-300 text-sm leading-relaxed">
+            從試算可以發現，最高與最低「總費用年百分率」的<b>總還款金額差距</b>非常可觀。建議在申請前確保信用紀錄良好，以爭取靠近左側的條件。
+        </p>
+    </div>
+</div>
+
+<script>
+    const bankData = [
+        { name: "樂天銀行", project: "樂天貸・感謝祭", minApr: 2.12, maxApr: 15.62, color: "rose" },
+        { name: "將來銀行", project: "將來免等貸", minApr: 2.25, maxApr: 11.17, color: "emerald" },
+        { name: "台新 Richart", project: "科學園區限定", minApr: 2.99, maxApr: 4.23, color: "purple" },
+        { name: "凱基銀行", project: "十年期信貸", minApr: 3.17, maxApr: 16.78, color: "blue" },
+        { name: "LINE Bank", project: "分期信貸專案", minApr: 3.28, maxApr: 16.44, color: "green" }
+    ];
+
+    function calculateMonthlyPayment(amount, annualRate, months) {
+        if (annualRate === 0) return amount / months;
+        const monthlyRate = annualRate / 100 / 12;
+        return (amount * monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+    }
+
+    function formatCurrency(num) {
+        return Math.round(num).toLocaleString('zh-TW');
+    }
+
+    function updateResults() {
+        const amount = parseFloat(document.getElementById('loanAmount').value) || 0;
+        const resultsList = document.getElementById('resultsList');
+        resultsList.innerHTML = '';
+
+        bankData.forEach(bank => {
+            const minMonthly = calculateMonthlyPayment(amount, bank.minApr, 120);
+            const maxMonthly = calculateMonthlyPayment(amount, bank.maxApr, 120);
+            
+            const minTotalReturn = minMonthly * 120;
+            const maxTotalReturn = maxMonthly * 120;
+            
+            const minTotalInterest = minTotalReturn - amount;
+            const maxTotalInterest = maxTotalReturn - amount;
+
+            const card = document.createElement('div');
+            card.className = `card bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200`;
+            
+            card.innerHTML = `
+                <div class="bg-slate-50 px-6 py-3 border-b border-slate-200 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-0.5 bg-${bank.color}-500 text-white text-xs font-bold rounded">${bank.name}</span>
+                        <h3 class="font-bold text-slate-800">${bank.project}</h3>
+                    </div>
+                    <div class="text-xs font-medium text-slate-400 tracking-widest">總費用年百分率區間: ${bank.minApr}% - ${bank.maxApr}%</div>
+                </div>
+                
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                    <!-- 最低情況 -->
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+                            <span class="text-xs font-bold text-slate-400 uppercase">最低總費用年百分率試算 (${bank.minApr}%)</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-[10px] text-slate-400 mb-1">預估月付額</div>
+                                <div class="text-xl font-bold text-slate-900 font-mono">$${formatCurrency(minMonthly)}</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-slate-400 mb-1">利息總支出</div>
+                                <div class="text-xl font-bold text-red-500 font-mono">$${formatCurrency(minTotalInterest)}</div>
+                            </div>
+                        </div>
+                        <div class="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
+                            <div class="text-[10px] text-emerald-600 font-bold mb-1 uppercase">總還款金額</div>
+                            <div class="text-2xl font-black text-emerald-700 font-mono">$${formatCurrency(minTotalReturn)}</div>
+                        </div>
+                    </div>
+
+                    <!-- 最高情況 -->
+                    <div class="space-y-4 pt-4 md:pt-0 md:pl-8">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-orange-400"></div>
+                            <span class="text-xs font-bold text-slate-400 uppercase">最高總費用年百分率試算 (${bank.maxApr}%)</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-[10px] text-slate-400 mb-1">預估月付額</div>
+                                <div class="text-xl font-bold text-slate-900 font-mono">$${formatCurrency(maxMonthly)}</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-slate-400 mb-1">利息總支出</div>
+                                <div class="text-xl font-bold text-red-500 font-mono">$${formatCurrency(maxTotalInterest)}</div>
+                            </div>
+                        </div>
+                        <div class="bg-orange-50 rounded-xl p-3 border border-orange-100">
+                            <div class="text-[10px] text-orange-600 font-bold mb-1 uppercase">總還款金額</div>
+                            <div class="text-2xl font-black text-orange-700 font-mono">$${formatCurrency(maxTotalReturn)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            resultsList.appendChild(card);
+        });
+    }
+
+    document.getElementById('loanAmount').addEventListener('input', updateResults);
+    
+    // Initial call
+    window.onload = updateResults;
+</script>
+
+</body>
+</html>
