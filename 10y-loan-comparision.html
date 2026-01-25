@@ -8,6 +8,9 @@
     <style>
         .card { transition: all 0.3s ease; }
         .card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        /* 隱藏原始 number input 的箭頭 */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans">
@@ -26,7 +29,8 @@
                 <label class="block text-sm font-semibold mb-2 text-slate-700">欲貸款金額 (新台幣)</label>
                 <div class="relative">
                     <span class="absolute left-4 top-3 text-slate-400 font-bold">$</span>
-                    <input type="number" id="loanAmount" value="1000000" step="10000"
+                    <!-- 使用 text 型態以利格式化顯示 -->
+                    <input type="text" id="loanAmountDisplay" value="1,000,000"
                            class="w-full pl-10 pr-4 py-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-xl font-bold outline-none">
                 </div>
                 <p class="text-xs text-slate-400 mt-2">* 預設分 120 期 (10年) 本息平均攤還</p>
@@ -103,7 +107,10 @@
     }
 
     function updateResults() {
-        const amount = parseFloat(document.getElementById('loanAmount').value) || 0;
+        // 從顯示值中移除逗號並轉換為數字
+        const displayVal = document.getElementById('loanAmountDisplay').value;
+        const amount = parseFloat(displayVal.replace(/,/g, '')) || 0;
+        
         const resultsList = document.getElementById('resultsList');
         resultsList.innerHTML = '';
 
@@ -179,7 +186,24 @@
         });
     }
 
-    document.getElementById('loanAmount').addEventListener('input', updateResults);
+    // 金額輸入格式化邏輯
+    const inputEl = document.getElementById('loanAmountDisplay');
+    inputEl.addEventListener('input', function(e) {
+        // 取得原始數字
+        let value = e.target.value.replace(/,/g, '');
+        // 只保留數字
+        value = value.replace(/[^\d]/g, '');
+        
+        if (value) {
+            // 格式化為千分位
+            const formatted = parseInt(value).toLocaleString('zh-TW');
+            e.target.value = formatted;
+        } else {
+            e.target.value = '';
+        }
+        
+        updateResults();
+    });
     
     // Initial call
     window.onload = updateResults;
